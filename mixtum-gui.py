@@ -7,19 +7,21 @@ from math import ceil
 import matplotlib.pyplot as plt
 import pandas as pd
 import panel as pn
-from io import StringIO
+import io
+import zipfile
 from datetime import datetime
 
 
 
 pn.extension()
 pn.extension('tabulator')
+pn.extension('filedropper')
 
 
 
 # Globals
 
-geno_file_path = ''
+geno_file_data = None
 
 populations_dict = defaultdict(list)
 populations = []
@@ -74,10 +76,11 @@ f3_test = None
 
 # Input and output widgets
 
-file_selector = pn.widgets.FileSelector(name = 'Select .geno, .ind and .snp files', directory = '~', only_files = True)
-load_files_button = pn.widgets.Button(name = 'Parse and check input files', button_type = 'primary')
+zip_file_dropper = pn.widgets.FileDropper(accepted_filetypes = ['application/zip'], max_file_size = '1000MB', multiple = False)
+dat_file_dropper = pn.widgets.FileDropper(max_file_size = '1MB', multiple = False)
+load_files_button = pn.widgets.Button(name = 'Parse and check input files', button_type = 'primary', disabled = True)
 
-alert_pane = pn.pane.Alert('### Input files selection\nPlease, select a triad of .geno, .ind and .snp input files, and optionally a .dat input file with a list of selected populations.\nThen press the parse button.', alert_type = 'primary')
+alert_pane = pn.pane.Alert('### Input files upload\nPlease, upload a ZIP with a triad of .geno, .ind and .snp input files, and optionally an input file with a list of selected populations.\nThen press the parse button.', alert_type = 'primary')
 
 reset_sel_pops_button = pn.widgets.Button(name = 'Reset selected populations', button_type = 'primary')
 
@@ -127,13 +130,18 @@ def set_alert_pane(text, type):
 
 
 def reset_alert_pane(event):
-    text = '### Input files selection\nPlease, select a triad of .geno, .ind and .snp input files, and optionally a .dat input file with a list of selected populations.\nThen press the parse button.'
+    text = '### Input files upload\nPlease, upload a ZIP with triad of .geno, .ind and .snp input files, and optionally an input file with a list of selected populations.\nThen press the parse button.'
     alert_pane.object = text
     alert_pane.alert_type = 'primary'
 
+    if zip_file_dropper.value:
+        load_files_button.disabled = False
+    else:
+        load_files_button.disabled = True
 
 
-file_selector.param.watch(reset_alert_pane, 'value')
+
+zip_file_dropper.param.watch(reset_alert_pane, 'value')
 
 
 
@@ -261,14 +269,12 @@ aux_pops_select.param.watch(set_selects_values, 'value')
 
 
 
-def parse_selected_populations(file_path):
+def parse_selected_populations(data):
     global parsed_sel_pops
     read_sel_pops = []
 
-    with file_path.open(mode = 'r', encoding = 'utf-8') as file:
-        content = file.read()
-        pop_lines = [line.split() for line in content.splitlines() if not line.startswith('#')]
-        read_sel_pops = [pop_line[0] for pop_line in pop_lines]
+    pop_lines = [line.split() for line in data.splitlines() if not line.startswith('#')]
+    read_sel_pops = [pop_line[0] for pop_line in pop_lines]
 
     invalid_pops = []
     for pop in read_sel_pops:
@@ -304,7 +310,7 @@ pn.bind(reset_sel_pops, reset_sel_pops_button, watch = True)
 
 
 
-def parse_populations(file_path):
+def parse_populations(file_path, data):
     global populations_dict, populations
 
     populations_dict = defaultdict(list)
@@ -315,25 +321,23 @@ def parse_populations(file_path):
     text = f'### Parsing and checking {file_path}\n'
     text_lines = [text, '']
 
-    with file_path.open(mode = 'r', encoding = 'utf-8') as file:
-        content = file.read()
-        for index, line in enumerate(content.splitlines()):
-            columns = line.split()
-            pop_name = columns[-1]
-            populations_dict[pop_name].append(index)
+    for index, line in enumerate(data.splitlines()):
+        columns = line.split()
+        pop_name = columns[-1]
+        populations_dict[pop_name].append(index)
 
-            num_rows += 1
-            if (num_rows % 1000 == 0):
-                text_lines[-1] = f'Number of rows: {num_rows}'
-                set_alert_pane('\n'.join(text_lines), 'warning')
+        num_rows += 1
+        if (num_rows % 1000 == 0):
+            text_lines[-1] = f'Number of rows: {num_rows}'
+            set_alert_pane('\n'.join(text_lines), 'warning')
 
-        populations = list(populations_dict.keys())
+    populations = list(populations_dict.keys())
 
     return num_rows
 
 
 
-def parse_snp_names(file_path):
+def parse_snp_names(file_path, data):
     global snp_names
     snp_names = []
 
@@ -342,62 +346,81 @@ def parse_snp_names(file_path):
     text = f'### Parsing and checking {file_path}\n'
     text_lines = [text, '']
 
-    with file_path.open(mode = 'r', encoding = 'utf-8') as file:
-        content = file.read()
-        for line in content.splitlines():
-            columns = line.split()
-            snp_names.append(columns[0])
+    for line in data.splitlines():
+        columns = line.split()
+        snp_names.append(columns[0])
 
-            num_alleles += 1
-            if (num_alleles % 10000 == 0):
-                text_lines[-1] = f'Number of alleles: {num_alleles}'
+        num_alleles += 1
+        if (num_alleles % 10000 == 0):
+            text_lines[-1] = f'Number of alleles: {num_alleles}'
 
-                pn.bind(load_input_files, load_files_button, watch = True)
+            pn.bind(load_input_files, load_files_button, watch = True)
 
-                set_alert_pane('\n'.join(text_lines), 'warning')
+            set_alert_pane('\n'.join(text_lines), 'warning')
 
     return num_alleles
 
 
 
-def geno_table_shape(file_path):
+def geno_table_shape(file_path, data):
     num_rows = 0
     num_columns = []
 
     text = f'### Parsing and checking {file_path}\n'
     text_lines = [text, '']
 
-    with file_path.open(mode = 'r', encoding = 'utf-8') as file:
-        for row in file:
-            num_rows += 1
-            num_columns.append(len(row) - 1)
+    for row in data.splitlines():
+        num_rows += 1
+        num_columns.append(len(row))
 
-            if (num_rows % 1000 == 0):
-                text_lines[-1] = f'Number of rows: {num_rows}'
-                set_alert_pane('\n'.join(text_lines), 'warning')
+        if (num_rows % 1000 == 0):
+            text_lines[-1] = f'Number of rows: {num_rows}'
+            set_alert_pane('\n'.join(text_lines), 'warning')
 
-        text_lines[-1] = f'Number of rows: {num_rows}'
-        set_alert_pane('\n'.join(text_lines), 'warning')
+    text_lines[-1] = f'Number of rows: {num_rows}'
+    set_alert_pane('\n'.join(text_lines), 'warning')
 
     return num_rows, num_columns
 
 
 
+def zip_file_names():
+    files = []
+    with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
+        for file in zip_ref.namelist():
+            if zipfile.Path(zip_ref, file).is_file():
+                files.append(file)
+    return files
+
+
+
+def unzip_input_file():
+    extracted_files = {}
+    with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
+        files = zip_ref.namelist()
+        for file in files:
+            file_path = Path(file)
+            if file_path.suffix in ['.geno', '.ind', '.snp']:
+                extracted_files[file] = zip_ref.read(file)
+    return extracted_files
+
+
+
 def load_input_files(event):
-    file_paths = file_selector.value
+    file_paths = zip_file_names()
 
     # Check selected files for invalid suffixes
 
-    invalid_file_paths = []
+    invalid_file_suffixes = []
 
     for fp in file_paths:
         file_path = Path(fp)
-        if file_path.suffix not in ['.geno', '.ind', '.snp', '.dat']:
-            invalid_file_paths.append(fp + '\n')
+        if file_path.suffix not in ['.geno', '.ind', '.snp']:
+            invalid_file_suffixes.append(file_path.suffix + '\n')
 
-    if len(invalid_file_paths) > 0:
-        invalid_fp_list = '- ' + '- '.join(invalid_file_paths)
-        text = f'### Unrecognized file suffixes\nValid input files end with the suffixes: .geno, .ind and .snp\nPlease, deselect the following files:\n{invalid_fp_list}'
+    if len(invalid_file_suffixes) > 0:
+        invalid_suff_list = '- '.join(invalid_file_suffixes)
+        text = f'### Unrecognized file suffixes found in ZIP file:\n{invalid_suff_list}\nValid input files end with the suffixes: .geno, .ind and .snp'
         set_alert_pane(text, 'danger')
         return
 
@@ -408,27 +431,36 @@ def load_input_files(event):
     count_geno = suffixes.count('.geno')
     count_ind = suffixes.count('.ind')
     count_snp = suffixes.count('.snp')
-    count_dat = suffixes.count('.dat')
 
-    if count_geno != 1 or count_ind != 1 or count_snp != 1 or count_dat > 1:
-        text = '### Wrong number of input files\nPlease, select a triad of input files (.geno, .ind, .snp) and optionally a single selected populations input file (.dat)'
+    if count_geno != 1 or count_ind != 1 or count_snp != 1:
+        text = '### Wrong number of input files\nPlease, upload a triad of input files (.geno, .ind, .snp)'
         set_alert_pane(text, 'danger')
         return
 
     # Succesful selection
 
-    global geno_file_path
+    extracted_files = unzip_input_file()
 
-    geno_file_path = next((Path(fp) for fp in file_paths if Path(fp).suffix == '.geno'), None)
-    ind_file_path = next((Path(fp) for fp in file_paths if Path(fp).suffix == '.ind'), None)
-    snp_file_path = next((Path(fp) for fp in file_paths if Path(fp).suffix == '.snp'), None)
-    dat_file_path = next((Path(fp) for fp in file_paths if Path(fp).suffix == '.dat'), None)
+    geno_file_path = ''
+    ind_file_path = ''
+    snp_file_path = ''
+
+    for fp in file_paths:
+        file_path = Path(fp)
+        if file_path.suffix == '.geno':
+            geno_file_path = fp
+        elif file_path.suffix == '.ind':
+            ind_file_path = fp
+        elif file_path.suffix == '.snp':
+            snp_file_path = fp
 
     # Parsing
 
     # Check .geno table
 
-    num_geno_rows, num_geno_columns = geno_table_shape(geno_file_path)
+    global geno_file_data
+    geno_file_data = extracted_files[geno_file_path].decode('utf-8')
+    num_geno_rows, num_geno_columns = geno_table_shape(geno_file_path, geno_file_data)
 
     if not all(nc == num_geno_columns[0] for nc in num_geno_columns):
         text = f'### Parsing failed\nIn {geno_file_path}: Not all rows are of equal number of columns'
@@ -439,7 +471,7 @@ def load_input_files(event):
 
     global num_alleles
 
-    num_alleles = parse_snp_names(snp_file_path)
+    num_alleles = parse_snp_names(snp_file_path, extracted_files[snp_file_path].decode('utf-8'))
 
     if num_alleles != num_geno_rows:
         text = f'### Parsing failed\nNumber of alleles ({num_alleles}) in .snp file is not equal to number of rows ({num_geno_rows}) in .geno file'
@@ -448,7 +480,7 @@ def load_input_files(event):
 
     # Parse and check columns
 
-    num_ind_rows = parse_populations(ind_file_path)
+    num_ind_rows = parse_populations(ind_file_path, extracted_files[ind_file_path].decode('utf-8'))
 
     if num_ind_rows != num_geno_columns[0]:
         text = f'### Parsing failed\nNumber of rows ({num_ind_rows}) in .ind file is not equal to number of columns ({num_geno_columns[0]}) in .geno file'
@@ -460,8 +492,12 @@ def load_input_files(event):
     global sel_pops
     global parsed_sel_pops
 
-    if dat_file_path is not None:
-        parse_selected_populations(dat_file_path)
+    dat_file_path = ''
+
+    if dat_file_dropper.value:
+        dat_file_data = next(iter(dat_file_dropper.value.items()))[1].decode('utf-8')
+        parse_selected_populations(dat_file_data)
+        dat_file_path = next(iter(dat_file_dropper.value.items()))[0]
     else:
         sel_pops = []
         parsed_sel_pops = []
@@ -527,9 +563,8 @@ def allele_frequency(alleles):
 
 
 def population_allele_frequencies(pop_indices, allele_freqs):
-    with geno_file_path.open(mode = 'r', encoding = 'utf-8') as file:
-        for index, row in enumerate(file):
-            allele_freqs[index] = allele_frequency([int(row[i]) for i in pop_indices])
+    for index, row in enumerate(geno_file_data.splitlines()):
+        allele_freqs[index] = allele_frequency([int(row[i]) for i in pop_indices])
 
 
 
@@ -892,7 +927,7 @@ pn.bind(compute_results, compute_results_button, watch = True)
 
 
 def save_population_allele_frequencies():
-    file = StringIO()
+    file = io.StringIO()
 
     pops_width = max([len(name) for name in sel_pops])
     prec = 6
@@ -923,7 +958,7 @@ freqs_download_button.callback = save_population_allele_frequencies
 
 
 def save_f4_points():
-    file = StringIO()
+    file = io.StringIO()
 
     aux_pops_width = max([len(name) for name in auxiliaries])
     prec = 6
@@ -960,7 +995,7 @@ def save_admixture_data():
     num_aux_pops = len(auxiliaries)
     num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
-    file = StringIO()
+    file = io.StringIO()
 
     file.write(f'Admixture model: {hybrid} = {parent1} + {parent2}\n')
     file.write(f'SNPs employed: {num_valid_alleles} / {num_alleles}\n')
@@ -1001,9 +1036,15 @@ def admixture_model_card_height():
 
 card_margin = 10
 
-avail_pops_box = pn.WidgetBox('### Available populations', avail_pops_filter, avail_pops_table, margin = card_margin)
-sel_pops_box = pn.WidgetBox('### Selected populations', reset_sel_pops_button, sel_pops_table, margin = card_margin)
-comp_box = pn.WidgetBox('### Computation', num_procs_input, compute_freqs_button, freqs_download_button, margin = card_margin)
+alert_card = pn.Card(alert_pane, title = 'Messages', collapsible = True, margin = card_margin)
+
+zip_file_dropper_card = pn.Card(zip_file_dropper, title = 'Upload ZIP with input triad', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
+dat_file_dropper_card = pn.Card(dat_file_dropper, title = 'Upload file with selected populations', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
+input_droppers_layout = pn.FlexBox(zip_file_dropper_card, dat_file_dropper_card, flex_direction = 'row')
+
+avail_pops_card = pn.Card(avail_pops_filter, avail_pops_table, title = 'Available populations', margin = card_margin, styles = {'width': 'fit-content'})
+sel_pops_card = pn.Card(reset_sel_pops_button, sel_pops_table, title = 'Selected populations', margin = card_margin, styles = {'width': 'fit-content'})
+comp_card = pn.Card(num_procs_input, compute_freqs_button, freqs_download_button, title = 'Computing', margin = card_margin, styles = {'width': 'fit-content'})
 
 admixture_model_layout = pn.FlexBox(hybrid_select, parent1_select, parent2_select, aux_pops_select, flex_direction = 'row', justify_content = 'space-evenly')
 admixture_model_card = pn.Card(admixture_model_layout, title = 'Admixture model', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
@@ -1023,8 +1064,9 @@ plots_card = pn.Card(plots_layout, title = 'Plots', collapsible = False, margin 
 
 # Layouts
 
-input_files_layout = pn.Column(file_selector, load_files_button, name = 'Inputs', sizing_mode = 'stretch_width')
-select_pops_layout = pn.FlexBox(avail_pops_box, sel_pops_box, comp_box, name = 'Select populations', flex_direction = 'row')
+
+input_files_layout = pn.Column(input_droppers_layout, load_files_button, name = 'Inputs', sizing_mode = 'stretch_width', styles = {'width': 'fit-content'})
+select_pops_layout = pn.FlexBox(avail_pops_card, sel_pops_card, comp_card, name = 'Select populations', flex_direction = 'row')
 results_layout = pn.Column(flex_box2, plots_card, name = 'Results')
 
 # Tabs
@@ -1033,7 +1075,7 @@ tabs = pn.Tabs(input_files_layout, select_pops_layout, results_layout)
 
 # Main layout
 
-main_layout = pn.Column(alert_pane, tabs, scroll = True)
+main_layout = pn.Column(alert_card, tabs, scroll = True)
 
 # Template
 
