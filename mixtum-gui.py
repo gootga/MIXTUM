@@ -74,7 +74,7 @@ f3_test = None
 
 # Input and output widgets
 
-file_selector = pn.widgets.FileSelector(name = 'Select .geno, .ind and .snp files', only_files = True)
+file_selector = pn.widgets.FileSelector(name = 'Select .geno, .ind and .snp files', directory = '~', only_files = True)
 load_files_button = pn.widgets.Button(name = 'Parse and check input files', button_type = 'primary')
 
 alert_pane = pn.pane.Alert('### Input files selection\nPlease, select a triad of .geno, .ind and .snp input files, and optionally a .dat input file with a list of selected populations.\nThen press the parse button.', alert_type = 'primary')
