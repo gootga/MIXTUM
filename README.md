@@ -4,5 +4,5 @@
     python -m venv .venv
     source .venv/bin/activate
     pip install panel watchfiles matplotlib
-    panel convert mixtum-gui.py --to pyodide-worker --out gui
-    mv gui/mixtum-gui.html gui/index.html
+    panel convert mixtum-gui.py --to pyodide-worker --out docs
+    mv docs/mixtum-gui.html docs/index.html
