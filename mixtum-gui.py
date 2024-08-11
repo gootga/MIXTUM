@@ -78,7 +78,7 @@ f3_test = None
 
 zip_file_dropper = pn.widgets.FileDropper(accepted_filetypes = ['application/zip'], max_file_size = '1000MB', multiple = False)
 dat_file_dropper = pn.widgets.FileDropper(max_file_size = '1MB', multiple = False)
-load_files_button = pn.widgets.Button(name = 'Parse and check input files', button_type = 'primary', disabled = True)
+load_files_button = pn.widgets.Button(name = 'Parse and check input files', button_type = 'primary', disabled = False)
 
 alert_pane = pn.pane.Alert('### Input files upload\nPlease, upload a ZIP with a triad of .geno, .ind and .snp input files, and optionally an input file with a list of selected populations.\nThen press the parse button.', alert_type = 'primary')
 
@@ -134,14 +134,14 @@ def reset_alert_pane(event):
     alert_pane.object = text
     alert_pane.alert_type = 'primary'
 
-    if zip_file_dropper.value:
-        load_files_button.disabled = False
-    else:
-        load_files_button.disabled = True
+    #if zip_file_dropper.value:
+    #    load_files_button.disabled = False
+    #else:
+    #    load_files_button.disabled = True
 
 
 
-zip_file_dropper.param.watch(reset_alert_pane, 'value')
+#zip_file_dropper.param.watch(reset_alert_pane, 'value')
 
 
 
@@ -407,6 +407,9 @@ def unzip_input_file():
 
 
 def load_input_files(event):
+    if not zip_file_dropper.value:
+        return
+
     file_paths = zip_file_names()
 
     # Check selected files for invalid suffixes
