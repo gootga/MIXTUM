@@ -2,9 +2,8 @@ from pathlib import Path
 from collections import defaultdict
 import numpy as np
 from time import time
-from multiprocessing import Process, Array
-from math import ceil
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import pandas as pd
 import panel as pn
 import io
@@ -21,7 +20,10 @@ pn.extension('filedropper')
 
 # Globals
 
-geno_file_data = None
+geno_file_path = None
+ind_file_path = None
+snp_file_path = None
+input_triad = {}
 
 populations_dict = defaultdict(list)
 populations = []
@@ -84,7 +86,6 @@ alert_pane = pn.pane.Alert('### Input files upload\nPlease, upload a ZIP with a 
 
 reset_sel_pops_button = pn.widgets.Button(name = 'Reset selected populations', button_type = 'primary')
 
-num_procs_input = pn.widgets.IntInput(name = 'Number of parallel processes', value = 1, step = 1, start = 1)
 compute_freqs_button = pn.widgets.Button(name = 'Compute allele frequencies', button_type = 'primary', disabled = True)
 freqs_download_button = pn.widgets.FileDownload(label = 'Download allele frequencies', disabled = True, button_type = 'primary')
 
@@ -134,14 +135,14 @@ def reset_alert_pane(event):
     alert_pane.object = text
     alert_pane.alert_type = 'primary'
 
-    #if zip_file_dropper.value:
-    #    load_files_button.disabled = False
-    #else:
-    #    load_files_button.disabled = True
+    if zip_file_dropper.value:
+        load_files_button.disabled = False
+    else:
+        load_files_button.disabled = True
 
 
 
-#zip_file_dropper.param.watch(reset_alert_pane, 'value')
+zip_file_dropper.param.watch(reset_alert_pane, 'value')
 
 
 
@@ -310,7 +311,7 @@ pn.bind(reset_sel_pops, reset_sel_pops_button, watch = True)
 
 
 
-def parse_populations(file_path, data):
+def parse_populations():
     global populations_dict, populations
 
     populations_dict = defaultdict(list)
@@ -318,11 +319,11 @@ def parse_populations(file_path, data):
 
     num_rows = 0
 
-    text = f'### Parsing and checking {file_path}\n'
+    text = f'### Parsing and checking {ind_file_path}\n'
     text_lines = [text, '']
 
-    for index, line in enumerate(data.splitlines()):
-        columns = line.split()
+    for index, row in enumerate(input_triad[ind_file_path]):
+        columns = row.split()
         pop_name = columns[-1]
         populations_dict[pop_name].append(index)
 
@@ -337,39 +338,36 @@ def parse_populations(file_path, data):
 
 
 
-def parse_snp_names(file_path, data):
+def parse_snp_names():
     global snp_names
     snp_names = []
 
     num_alleles = 0
 
-    text = f'### Parsing and checking {file_path}\n'
+    text = f'### Parsing and checking {snp_file_path}\n'
     text_lines = [text, '']
 
-    for line in data.splitlines():
-        columns = line.split()
+    for row in input_triad[snp_file_path]:
+        columns = row.split()
         snp_names.append(columns[0])
 
         num_alleles += 1
         if (num_alleles % 10000 == 0):
             text_lines[-1] = f'Number of alleles: {num_alleles}'
-
-            pn.bind(load_input_files, load_files_button, watch = True)
-
             set_alert_pane('\n'.join(text_lines), 'warning')
 
     return num_alleles
 
 
 
-def geno_table_shape(file_path, data):
+def geno_table_shape():
     num_rows = 0
     num_columns = []
 
-    text = f'### Parsing and checking {file_path}\n'
+    text = f'### Parsing and checking {geno_file_path}\n'
     text_lines = [text, '']
 
-    for row in data.splitlines():
+    for row in input_triad[geno_file_path]:
         num_rows += 1
         num_columns.append(len(row))
 
@@ -395,21 +393,19 @@ def zip_file_names():
 
 
 def unzip_input_file():
-    extracted_files = {}
+    global input_triad
+    input_triad = {}
+
     with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
         files = zip_ref.namelist()
         for file in files:
             file_path = Path(file)
             if file_path.suffix in ['.geno', '.ind', '.snp']:
-                extracted_files[file] = zip_ref.read(file)
-    return extracted_files
+                input_triad[file] = zip_ref.read(file).decode('utf-8').splitlines()
 
 
 
 def load_input_files(event):
-    if not zip_file_dropper.value:
-        return
-
     file_paths = zip_file_names()
 
     # Check selected files for invalid suffixes
@@ -442,11 +438,12 @@ def load_input_files(event):
 
     # Succesful selection
 
-    extracted_files = unzip_input_file()
+    text = '### Extracting ZIP file to memory\nPlease, wait...'
+    set_alert_pane(text, 'warning')
 
-    geno_file_path = ''
-    ind_file_path = ''
-    snp_file_path = ''
+    unzip_input_file()
+
+    global geno_file_path, ind_file_path, snp_file_path
 
     for fp in file_paths:
         file_path = Path(fp)
@@ -461,9 +458,7 @@ def load_input_files(event):
 
     # Check .geno table
 
-    global geno_file_data
-    geno_file_data = extracted_files[geno_file_path].decode('utf-8')
-    num_geno_rows, num_geno_columns = geno_table_shape(geno_file_path, geno_file_data)
+    num_geno_rows, num_geno_columns = geno_table_shape()
 
     if not all(nc == num_geno_columns[0] for nc in num_geno_columns):
         text = f'### Parsing failed\nIn {geno_file_path}: Not all rows are of equal number of columns'
@@ -474,7 +469,7 @@ def load_input_files(event):
 
     global num_alleles
 
-    num_alleles = parse_snp_names(snp_file_path, extracted_files[snp_file_path].decode('utf-8'))
+    num_alleles = parse_snp_names()
 
     if num_alleles != num_geno_rows:
         text = f'### Parsing failed\nNumber of alleles ({num_alleles}) in .snp file is not equal to number of rows ({num_geno_rows}) in .geno file'
@@ -483,7 +478,7 @@ def load_input_files(event):
 
     # Parse and check columns
 
-    num_ind_rows = parse_populations(ind_file_path, extracted_files[ind_file_path].decode('utf-8'))
+    num_ind_rows = parse_populations()
 
     if num_ind_rows != num_geno_columns[0]:
         text = f'### Parsing failed\nNumber of rows ({num_ind_rows}) in .ind file is not equal to number of columns ({num_geno_columns[0]}) in .geno file'
@@ -549,6 +544,12 @@ def remove_invalid_alleles():
 
 
 
+def time_format(seconds):
+    minutes = int(seconds // 60)
+    seconds = int(seconds % 60)
+    return f'{minutes} minutes, {seconds} seconds'
+
+
 def allele_frequency(alleles):
     freq = 0
     num_alleles = 0
@@ -571,55 +572,49 @@ def population_allele_frequencies(pop_indices, allele_freqs):
 
 
 
-def parallel_compute_populations_frequencies(event):
-    pop_indices = [populations_dict[pop] for pop in sel_pops]
-    num_computations = len(pop_indices)
-    num_procs = num_procs_input.value
-    batch_size = ceil(num_computations / num_procs)
-    index = 0
+def compute_populations_frequencies(event):
+    num_pops = len(sel_pops)
 
     text_lines = ['### Computing']
-    text = f'Computing {num_alleles} frequencies per population for {num_computations} populations in {batch_size} batches of {num_procs} parallel processes.'
+    text = f'Computing {num_alleles} frequencies per population for {num_pops} populations.'
     text_lines.append(text)
     set_alert_pane('\n'.join(text_lines), 'warning')
 
-    pops_names = ''
     text_lines.append('')
-
-    allele_freqs = [Array('d', num_alleles) for i in range(num_computations)]
-
-    t1 = time()
-
-    for nb in range(batch_size):
-        procs = []
-        computing_pops = []
-
-        for nt in range(num_procs):
-            if index < num_computations:
-                p = Process(target = population_allele_frequencies, args = (pop_indices[index], allele_freqs[index]))
-                procs.append(p)
-                p.start()
-                computing_pops.append(sel_pops[index])
-            index += 1
-
-        pops_names += '{' + ', '.join(computing_pops) + '} '
-        text_lines[-1] = pops_names
-        set_alert_pane('\n'.join(text_lines), 'warning')
-
-        for p in procs:
-            p.join()
 
     global allele_frequencies
     allele_frequencies = defaultdict(list)
-    for i, freqs in enumerate(allele_freqs):
-        allele_frequencies[sel_pops[i]] = np.array(freqs)
+    for pop in sel_pops:
+        allele_frequencies[pop] = np.zeros(num_alleles)
 
-    t2 = time()
-    comp_time = t2 - t1
+    comp_time = []
+    t0 = time()
+
+    for index, row in enumerate(input_triad[geno_file_path]):
+        if index % 1000 == 0 or index == num_alleles - 1:
+            t1 = time()
+
+        for pop in sel_pops:
+            allele_frequencies[pop][index] = allele_frequency([int(row[i]) for i in populations_dict[pop]])
+
+        if index % 1000 == 0 or index == num_alleles - 1:
+            t2 = time()
+
+            comp_time.append(t2 - t1)
+
+            avg_comp_time = sum(comp_time) / len(comp_time)
+            remaining_comps = num_alleles - index - 1
+            remaining_time = remaining_comps * avg_comp_time
+
+            percentage_done = (index + 1) / num_alleles
+
+            t3 = time()
+            elapsed_time = t3 - t0
+
+            text_lines[-1] = f'Processed: {index + 1} / {num_alleles} rows ({percentage_done:.1%})\nEstimated remaining time: {time_format(remaining_time)}\nElapsed time {time_format(elapsed_time)}'
+            set_alert_pane('\n'.join(text_lines), 'warning')
 
     text_lines[0] = '### Finished'
-    text = f'Computation took {comp_time:.2f} seconds.'
-    text_lines.append(text)
     set_alert_pane('\n'.join(text_lines), 'success')
 
     invalid_allele_indices()
@@ -647,7 +642,7 @@ def parallel_compute_populations_frequencies(event):
 
 
 
-pn.bind(parallel_compute_populations_frequencies, compute_freqs_button, watch = True)
+pn.bind(compute_populations_frequencies, compute_freqs_button, watch = True)
 
 
 
@@ -811,7 +806,8 @@ def f4_ratio(hybrid_freqs, parent1_freqs, parent2_freqs, aux_freqs):
 
 
 def plot_fit(x, y, alpha, title, xlabel, ylabel):
-    fig, ax = plt.subplots(figsize = (plot_width_input.value, plot_height_input.value), layout = 'constrained')
+    fig = Figure(figsize = (plot_width_input.value, plot_height_input.value), layout = 'constrained')
+    ax = fig.subplots()
 
     ax.set_title(title, fontsize = plot_title_size_input.value)
 
@@ -829,7 +825,8 @@ def plot_histogram(histogram, title, xlabel, ylabel):
     counts = histogram[0]
     edges = histogram[1]
 
-    fig, ax = plt.subplots(figsize = (plot_width_input.value, plot_height_input.value), layout = 'constrained')
+    fig = Figure(figsize = (plot_width_input.value, plot_height_input.value), layout = 'constrained')
+    ax = fig.subplots()
 
     ax.set_title(title, fontsize = plot_title_size_input.value)
 
@@ -1047,7 +1044,7 @@ input_droppers_layout = pn.FlexBox(zip_file_dropper_card, dat_file_dropper_card,
 
 avail_pops_card = pn.Card(avail_pops_filter, avail_pops_table, title = 'Available populations', margin = card_margin, styles = {'width': 'fit-content'})
 sel_pops_card = pn.Card(reset_sel_pops_button, sel_pops_table, title = 'Selected populations', margin = card_margin, styles = {'width': 'fit-content'})
-comp_card = pn.Card(num_procs_input, compute_freqs_button, freqs_download_button, title = 'Computing', margin = card_margin, styles = {'width': 'fit-content'})
+comp_card = pn.Card(compute_freqs_button, freqs_download_button, title = 'Actions', margin = card_margin, styles = {'width': 'fit-content'})
 
 admixture_model_layout = pn.FlexBox(hybrid_select, parent1_select, parent2_select, aux_pops_select, flex_direction = 'row', justify_content = 'space-evenly')
 admixture_model_card = pn.Card(admixture_model_layout, title = 'Admixture model', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
@@ -1056,12 +1053,6 @@ actions_card = pn.Card(compute_results_button, f4_points_download_button, result
 plot_options_card = pn.Card(plot_width_input, plot_height_input, plot_title_size_input, plot_label_size_input, title = 'Plot options', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
 resulting_data_card = pn.Card(resulting_data_output, title = 'Results', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
 
-flex_box1 = pn.FlexBox(actions_card, plot_options_card, flex_direction = 'row', justify_content = 'space-evenly', margin = card_margin, styles = {'width': 'fit-content'})
-
-col = pn.Column(admixture_model_card, flex_box1, styles = {'width': 'fit-content'})
-
-flex_box2 = pn.FlexBox(col, resulting_data_card, flex_direction = 'row', justify_content = 'space-evenly', margin = card_margin, styles = {'width': 'fit-content'})
-
 plots_layout = pn.FlexBox(f4prime_fit_pane, f4_fit_pane, f4_ratio_histogram_pane, flex_direction = 'row', justify_content = 'space-evenly')
 plots_card = pn.Card(plots_layout, title = 'Plots', collapsible = False, margin = card_margin, styles = {'width': 'fit-content'})
 
@@ -1069,8 +1060,8 @@ plots_card = pn.Card(plots_layout, title = 'Plots', collapsible = False, margin 
 
 
 input_files_layout = pn.Column(input_droppers_layout, load_files_button, name = 'Inputs', sizing_mode = 'stretch_width', styles = {'width': 'fit-content'})
-select_pops_layout = pn.FlexBox(avail_pops_card, sel_pops_card, comp_card, name = 'Select populations', flex_direction = 'row')
-results_layout = pn.Column(flex_box2, plots_card, name = 'Results')
+select_pops_layout = pn.FlexBox(avail_pops_card, sel_pops_card, comp_card, name = 'Select populations', flex_direction = 'row', styles = {'width': 'fit-content'})
+results_layout = pn.FlexBox(admixture_model_card, actions_card, plot_options_card, resulting_data_card, plots_card, name = 'Results', flex_direction = 'row', justify_content = 'space-evenly', styles = {'width': 'fit-content'})
 
 # Tabs
 
