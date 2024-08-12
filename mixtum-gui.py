@@ -370,13 +370,16 @@ def geno_table_shape():
     text_lines = [text, '']
 
     #for row in input_triad[geno_file_path]:
-    for row in pn.state.cache['.geno']:
-        num_rows += 1
-        num_columns.append(len(row))
+    #for row in pn.state.cache['.geno']:
+    with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
+        with zip_ref.open(geno_file_path) as zip_file:
+            for row in zip_file:
+                num_rows += 1
+                num_columns.append(len(row.decode('utf-8').rstrip()))
 
-        if (num_rows % 1000 == 0):
-            text_lines[-1] = f'Number of rows: {num_rows}'
-            set_alert_pane('\n'.join(text_lines), 'warning')
+                if (num_rows % 1000 == 0):
+                    text_lines[-1] = f'Number of rows: {num_rows}'
+                    set_alert_pane('\n'.join(text_lines), 'warning')
 
     text_lines[-1] = f'Number of rows: {num_rows}'
     set_alert_pane('\n'.join(text_lines), 'warning')
@@ -399,22 +402,17 @@ def unzip_input_file():
     #global input_triad
     #input_triad = {}
 
-    pn.state.cache['.geno'] = None
-    pn.state.cache['.ind'] = None
-    pn.state.cache['.snp'] = None
-
     with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
         files = zip_ref.namelist()
         for file in files:
             file_path = Path(file)
-            if file_path.suffix in ['.geno', '.ind', '.snp']:
+            if file_path.suffix in ['.ind', '.snp']:
                 #input_triad[file] = zip_ref.read(file).decode('utf-8').splitlines()
                 pn.state.cache[file_path.suffix] = []
                 with zip_ref.open(file) as zip_file:
-                    for i, row in enumerate(zip_file):
+                    for row in zip_file:
                         pn.state.cache[file_path.suffix].append(row.decode('utf-8').rstrip())
-                        print(i)
-        zip_file_dropper.value = {}
+        #zip_file_dropper.value = {}
 
 
 
@@ -604,29 +602,35 @@ def compute_populations_frequencies(event):
     t0 = time()
 
     #for index, row in enumerate(input_triad[geno_file_path]):
-    for index, row in enumerate(pn.state.cache['.geno']):
-        if index % 1000 == 0 or index == num_alleles - 1:
-            t1 = time()
+    #for index, row in enumerate(pn.state.cache['.geno']):
+    with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
+        with zip_ref.open(geno_file_path) as zip_file:
+            for index, row in enumerate(zip_file):
+                index += 1
+                row = row.decode('utf-8').rstrip()
 
-        for pop in sel_pops:
-            allele_frequencies[pop][index] = allele_frequency([int(row[i]) for i in populations_dict[pop]])
+                if index % 1000 == 0 or index == num_alleles:
+                    t1 = time()
 
-        if index % 1000 == 0 or index == num_alleles - 1:
-            t2 = time()
+                for pop in sel_pops:
+                    allele_frequencies[pop][index - 1] = allele_frequency([int(row[i]) for i in populations_dict[pop]])
 
-            comp_time.append(t2 - t1)
+                if index % 1000 == 0 or index == num_alleles:
+                    t2 = time()
 
-            avg_comp_time = sum(comp_time) / len(comp_time)
-            remaining_comps = num_alleles - index - 1
-            remaining_time = remaining_comps * avg_comp_time
+                    comp_time.append(t2 - t1)
 
-            percentage_done = (index + 1) / num_alleles
+                    avg_comp_time = sum(comp_time) / len(comp_time)
+                    remaining_comps = num_alleles - index
+                    remaining_time = remaining_comps * avg_comp_time
 
-            t3 = time()
-            elapsed_time = t3 - t0
+                    percentage_done = index / num_alleles
 
-            text_lines[-1] = f'Processed: {index + 1} / {num_alleles} rows ({percentage_done:.1%})\nEstimated remaining time: {time_format(remaining_time)}\nElapsed time {time_format(elapsed_time)}'
-            set_alert_pane('\n'.join(text_lines), 'warning')
+                    t3 = time()
+                    elapsed_time = t3 - t0
+
+                    text_lines[-1] = f'Processed: {index} / {num_alleles} rows ({percentage_done:.1%})\nEstimated remaining time: {time_format(remaining_time)}\nElapsed time {time_format(elapsed_time)}'
+                    set_alert_pane('\n'.join(text_lines), 'warning')
 
     text_lines[0] = '### Finished'
     set_alert_pane('\n'.join(text_lines), 'success')
