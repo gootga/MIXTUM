@@ -411,8 +411,9 @@ def unzip_input_file():
                 #input_triad[file] = zip_ref.read(file).decode('utf-8').splitlines()
                 pn.state.cache[file_path.suffix] = []
                 with zip_ref.open(file) as zip_file:
-                    for row in zip_file:
+                    for i, row in enumerate(zip_file):
                         pn.state.cache[file_path.suffix].append(row.decode('utf-8').rstrip())
+                        print(i)
         zip_file_dropper.value = {}
 
 
