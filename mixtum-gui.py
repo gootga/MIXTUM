@@ -23,7 +23,7 @@ pn.extension('filedropper')
 geno_file_path = None
 ind_file_path = None
 snp_file_path = None
-input_triad = {}
+#input_triad = {}
 
 populations_dict = defaultdict(list)
 populations = []
@@ -322,7 +322,8 @@ def parse_populations():
     text = f'### Parsing and checking {ind_file_path}\n'
     text_lines = [text, '']
 
-    for index, row in enumerate(input_triad[ind_file_path]):
+    #for index, row in enumerate(input_triad[ind_file_path]):
+    for index, row in enumerate(pn.state.cache['.ind']):
         columns = row.split()
         pop_name = columns[-1]
         populations_dict[pop_name].append(index)
@@ -347,7 +348,8 @@ def parse_snp_names():
     text = f'### Parsing and checking {snp_file_path}\n'
     text_lines = [text, '']
 
-    for row in input_triad[snp_file_path]:
+    #for row in input_triad[snp_file_path]:
+    for row in pn.state.cache['.snp']:
         columns = row.split()
         snp_names.append(columns[0])
 
@@ -367,7 +369,8 @@ def geno_table_shape():
     text = f'### Parsing and checking {geno_file_path}\n'
     text_lines = [text, '']
 
-    for row in input_triad[geno_file_path]:
+    #for row in input_triad[geno_file_path]:
+    for row in pn.state.cache['.geno']:
         num_rows += 1
         num_columns.append(len(row))
 
@@ -393,15 +396,24 @@ def zip_file_names():
 
 
 def unzip_input_file():
-    global input_triad
-    input_triad = {}
+    #global input_triad
+    #input_triad = {}
+
+    pn.state.cache['.geno'] = None
+    pn.state.cache['.ind'] = None
+    pn.state.cache['.snp'] = None
 
     with zipfile.ZipFile(io.BytesIO(next(iter(zip_file_dropper.value.items()))[1])) as zip_ref:
         files = zip_ref.namelist()
         for file in files:
             file_path = Path(file)
             if file_path.suffix in ['.geno', '.ind', '.snp']:
-                input_triad[file] = zip_ref.read(file).decode('utf-8').splitlines()
+                #input_triad[file] = zip_ref.read(file).decode('utf-8').splitlines()
+                pn.state.cache[file_path.suffix] = []
+                with zip_ref.open(file) as zip_file:
+                    for row in zip_file:
+                        pn.state.cache[file_path.suffix].append(row.decode('utf-8').rstrip())
+        zip_file_dropper.value = {}
 
 
 
@@ -590,7 +602,8 @@ def compute_populations_frequencies(event):
     comp_time = []
     t0 = time()
 
-    for index, row in enumerate(input_triad[geno_file_path]):
+    #for index, row in enumerate(input_triad[geno_file_path]):
+    for index, row in enumerate(pn.state.cache['.geno']):
         if index % 1000 == 0 or index == num_alleles - 1:
             t1 = time()
 
