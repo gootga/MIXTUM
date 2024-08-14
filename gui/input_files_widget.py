@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from gui.log_system import LogSystem
 from gui.select_file_widget import SelectFileWidget
 from gui.worker import Worker
 
@@ -9,8 +10,6 @@ from PySide6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout
 
 
 class InputFilesWidget(QWidget):
-    log_text_changed = Signal(str)
-
     def __init__(self, core):
         QWidget.__init__(self)
 
@@ -21,10 +20,8 @@ class InputFilesWidget(QWidget):
         self.thread_pool = QThreadPool()
         self.worker_finished = {'geno': False, 'ind': False, 'snp': False}
 
-        # Log text
-        self.log_text = ''
-        self.log_text_lines = {'main' : 'Please, select input files.', 'geno': '', 'ind': '', 'snp': '', 'pops': '', 'check': []}
-        self.set_log_text()
+        # Log system
+        self.log = LogSystem(['main', 'geno', 'ind', 'snp', 'pops', 'check'])
 
         # Select file widgets
         self.geno_file_widget = SelectFileWidget('Select .geno file', '(*.geno)')
@@ -63,63 +60,49 @@ class InputFilesWidget(QWidget):
         layout.addWidget(self.check_button)
         layout.addWidget(self.parse_pops_button)
 
-    def set_log_text(self):
-        text_list = [text for key, text in self.log_text_lines.items() if key != 'check' and len(text) > 0] + self.log_text_lines['check']
-        self.log_text = '\n'.join(text_list)
-        self.log_text_changed.emit(self.log_text)
-
     @Slot(int)
     def set_geno_log_text(self, num_rows):
-        self.log_text_lines['geno'] = f'Number of rows in .geno file: {num_rows}'
-        self.set_log_text()
+        self.log.set_entry('geno', f'Number of rows in .geno file: {num_rows}')
 
     @Slot(int)
     def set_ind_log_text(self, num_rows):
-        self.log_text_lines['ind'] = f'Number of rows in .ind file: {num_rows}'
-        self.set_log_text()
+        self.log.set_entry('ind', f'Number of rows in .ind file: {num_rows}')
 
     @Slot(int)
     def set_snp_log_text(self, num_rows):
-        self.log_text_lines['snp'] = f'Number of rows in .snp file: {num_rows}'
-        self.set_log_text()
+        self.log.set_entry('snp', f'Number of rows in .snp file: {num_rows}')
 
     @Slot(int)
     def set_pops_log_text(self, num_rows):
-        self.log_text_lines['pops'] = f'Number of selected populations: {num_rows}'
-        self.set_log_text()
+        self.log.set_entry('pops', f'Number of selected populations: {num_rows}')
 
     @Slot(str)
     def checking_finished(self, worker_name):
         self.worker_finished[worker_name] = True
         if all([status for name, status in self.worker_finished.items()]):
             if self.core.check_input_files():
-                self.log_text_lines['main'] = 'Check finished.'
-                self.log_text_lines['check'].append('Parsed input files seem to have a valid structure.')
-                self.set_log_text()
+                self.log.set_entry('main', 'Checking finished.')
+                self.log.append_entry('check', 'Parsed input files seem to have a valid structure.')
 
     @Slot()
     def geno_check_failed(self):
-        self.log_text_lines['main'] = 'Checking error!'
-        self.log_text_lines['check'].append('Error in .geno file: not all rows have the same number of columns.')
-        self.set_log_text()
+        self.log.set_entry('main', 'Checking error!')
+        self.log.append_entry('check', 'Error in .geno file: not all rows have the same number of columns.')
 
     @Slot(int, int)
     def ind_check_failed(self, num_pops, num_cols):
-        self.log_text_lines['main'] = 'Checking error!'
-        self.log_text_lines['check'].append(f'Error: Number of populations ({num_pops}) in .ind file is not equal to number of columns ({num_cols}) in .geno file.')
-        self.set_log_text()
+        self.log.set_entry('main', 'Checking error!')
+        self.log.append_entry('check', f'Error: Number of populations ({num_pops}) in .ind file is not equal to number of columns ({num_cols}) in .geno file.')
 
     @Slot(int, int)
     def snp_check_failed(self, num_alleles, num_rows):
-        self.log_text_lines['main'] = 'Checking error!'
-        self.log_text_lines['check'].append(f'Error: Number of alleles ({num_alleles}) in .snp file is not equal to number of rows ({num_rows}) in .geno file.')
-        self.set_log_text()
+        self.log.set_entry('main', 'Checking error!')
+        self.log.append_entry('check', f'Error: Number of alleles ({num_alleles}) in .snp file is not equal to number of rows ({num_rows}) in .geno file.')
 
     @Slot()
     def check_input_files(self):
-        self.log_text_lines['main'] = 'Checking input files...'
-        self.log_text_lines['check'] = []
-        self.set_log_text()
+        self.log.clear_entry('check')
+        self.log.set_entry('main', 'Checking input files...')
 
         self.worker_finished = {'geno': False, 'ind': False, 'snp': False}
 
@@ -141,13 +124,11 @@ class InputFilesWidget(QWidget):
 
     @Slot(str)
     def parsing_finished(self, worker_name):
-        self.log_text_lines['main'] = 'Parsing finished.'
-        self.set_log_text()
+        self.log.set_entry('main', 'Parsing finished.')
 
     @Slot()
     def parse_pops_file(self):
-        self.log_text_lines['main'] = 'Parsing selected populations file...'
-        self.set_log_text()
+        self.log.set_entry('main', 'Parsing selected populations file...')
 
         pops_worker = Worker('pops', self.core.parse_selected_populations)
         pops_worker.signals.progress[int].connect(self.set_pops_log_text)

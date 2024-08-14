@@ -1,3 +1,4 @@
+from gui.log_system import LogSystem
 from gui.worker import Worker
 
 from PySide6.QtCore import Signal, Slot, QThreadPool
@@ -17,9 +18,7 @@ class SelectPopsWidget(QWidget):
         self.thread_pool = QThreadPool()
 
         # Log text
-        self.log_text = ''
-        self.log_text_lines = {'main' : 'Please, select populations.', 'progress': ''}
-        self.set_log_text()
+        self.log = LogSystem(['main', 'progress'])
 
         # Number of computing processes
         self.num_procs_spin_box = QSpinBox()
@@ -44,19 +43,16 @@ class SelectPopsWidget(QWidget):
 
     @Slot(float)
     def set_progress_log_text(self, percent_done):
-        self.log_text_lines['progress'] = f'{percent_done:.1%}'
-        self.set_log_text()
+        self.log.set_entry('progress', f'{percent_done:.1%}')
 
     @Slot(str)
     def computing_finished(self, worker_name):
-        self.log_text_lines['main'] = 'Computation finished.'
-        self.set_log_text()
+        self.log.set_entry('main', 'Computation finished.')
 
     @Slot()
     def compute_frequencies(self):
-        self.log_text_lines['main'] = f'Computing allele frequencies...'
-        self.log_text_lines['progress'] = ''
-        self.set_log_text()
+        self.log.clear_entry('progress')
+        self.log.set_entry('main', f'Computing allele frequencies...')
 
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
         worker.signals.progress[float].connect(self.set_progress_log_text)

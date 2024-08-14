@@ -5,14 +5,13 @@ import numpy as np
 from time import time
 from multiprocessing import Process, Array
 from math import ceil
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from PySide6.QtCore import QObject, Signal, Slot
 
 
 class Core(QObject):
     # Signals
-    row_read = Signal(int)
     input_file_paths_state = Signal(bool)
     pops_file_path_state = Signal(bool)
     geno_file_error = Signal()
@@ -32,13 +31,14 @@ class Core(QObject):
         self.num_ind_rows = 0
         self.num_snp_rows = 0
 
-        self.avail_pops = defaultdict(list)
+        self.avail_pops = []
+        self.avail_pops_indices = defaultdict(list)
         self.snp_names = []
         self.selected_pops = []
 
         self.num_procs = 1
         self.num_alleles = 0
-        self.allele_frequencies = []
+        self.allele_frequencies = defaultdict(list)
 
     def check_file_paths(self):
         self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
@@ -82,7 +82,7 @@ class Core(QObject):
 
     # Parse .ind file containing population indices, and count number of rows
     def parse_ind_file(self, progress_callback):
-        self.avail_pops = defaultdict(list)
+        self.avail_pops_indices = defaultdict(list)
         self.num_ind_rows = 0
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
@@ -91,9 +91,11 @@ class Core(QObject):
 
                 columns = row.split()
                 pop_name = columns[-1]
-                self.avail_pops[pop_name].append(index)
+                self.avail_pops_indices[pop_name].append(index)
 
                 self.num_ind_rows += 1
+
+        self.avail_pops = list(self.avail_pops_indices.keys())
 
         progress_callback[int].emit(self.num_ind_rows)
 
@@ -137,6 +139,7 @@ class Core(QObject):
         with self.pops_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for row in file:
                 columns = row.split()
+                pop = columns[0]
                 self.selected_pops.append(columns[0])
 
                 num_pops += 1
@@ -169,7 +172,7 @@ class Core(QObject):
 
     # Parallel compute frequencies of all populations
     def parallel_compute_populations_frequencies(self, progress_callback):
-        pop_indices = [self.avail_pops[pop] for pop in self.selected_pops]
+        pop_indices = [self.avail_pops_indices[pop] for pop in self.selected_pops]
 
         num_computations = len(pop_indices)
         batch_size = ceil(num_computations / self.num_procs)
@@ -520,7 +523,7 @@ def f4_ratio(hybrid_freqs, parent1_freqs, parent2_freqs, aux_freqs):
 
 
 # Ploat a fit
-
+"""
 def plot_fit(x, y, alpha, title, xlabel, ylabel):
     fig, ax = plt.subplots()
 
@@ -533,11 +536,11 @@ def plot_fit(x, y, alpha, title, xlabel, ylabel):
     ax.plot(x, alpha * x)
 
     plt.show()
-
+"""
 
 
 # Plot a histogram
-
+"""
 def plot_histogram(histogram, title, xlabel, ylabel):
     counts = histogram[0]
     edges = histogram[1]
@@ -552,7 +555,7 @@ def plot_histogram(histogram, title, xlabel, ylabel):
     ax.bar(edges[:-1], counts, width = np.diff(edges), edgecolor = 'black', align = 'edge')
 
     plt.show()
-
+"""
 
 
 # Save frequencies
@@ -635,7 +638,7 @@ def save_timings(out_dir_path, exec_times):
             file.write(f'{key}: {value}\n')
 
 
-
+"""
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description = 'Mixtum: The geometry of admixture in population genetics')
@@ -735,3 +738,4 @@ if __name__ == '__main__':
     exec_times['save_outputs'] = t2 - t1
 
     save_timings(out_dir_path, exec_times)
+"""
