@@ -14,6 +14,7 @@ class Core(QObject):
     # Signals
     input_file_paths_state = Signal(bool)
     pops_file_path_state = Signal(bool)
+
     geno_file_error = Signal()
     ind_file_error = Signal(int, int)
     snp_file_error = Signal(int, int)
@@ -34,6 +35,7 @@ class Core(QObject):
         self.avail_pops = []
         self.avail_pops_indices = defaultdict(list)
         self.snp_names = []
+        self.parsed_pops = []
         self.selected_pops = []
 
         self.num_procs = 1
@@ -133,17 +135,28 @@ class Core(QObject):
 
     # Parse input file containing selected populations
     def parse_selected_populations(self, progress_callback):
-        self.selected_pops = []
+        self.parsed_pops = []
         num_pops = 0
 
         with self.pops_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for row in file:
                 columns = row.split()
                 pop = columns[0]
-                self.selected_pops.append(columns[0])
+                self.parsed_pops.append(columns[0])
 
                 num_pops += 1
                 progress_callback[int].emit(num_pops)
+
+        self.append_pops(self.parsed_pops)
+
+    def append_pops(self, pops):
+        self.selected_pops += pops
+
+    def remove_pops(self, pops):
+        self.selected_pops = [pop for pop in self.selected_pops if pop not in pops]
+
+    def reset_pops(self):
+        self.selected_pops = [pop for pop in self.parsed_pops]
 
     @Slot(int)
     def set_num_procs(self, np):
@@ -174,33 +187,37 @@ class Core(QObject):
     def parallel_compute_populations_frequencies(self, progress_callback):
         pop_indices = [self.avail_pops_indices[pop] for pop in self.selected_pops]
 
-        num_computations = len(pop_indices)
-        batch_size = ceil(num_computations / self.num_procs)
+        num_sel_pops = len(self.selected_pops)
+        batch_size = ceil(num_sel_pops / self.num_procs)
         index = 0
 
         #print(f'Computing {num_alleles} frequencies per population for {num_computations} populations in {batch_size} batches of {num_procs} parallel processes...')
 
-        allele_freqs = [Array('d', self.num_alleles) for i in range(num_computations)]
+        allele_freqs = [Array('d', self.num_alleles) for i in range(num_sel_pops)]
+
+        progress_callback[float].emit(0.0)
+        progress_callback[int].emit(0)
 
         for nb in range(batch_size):
             procs = []
             computing_pops = []
 
             for nt in range(self.num_procs):
-                if index < num_computations:
+                if index < num_sel_pops:
                     p = Process(target = self.population_allele_frequencies, args = (pop_indices[index], allele_freqs[index]))
                     procs.append(p)
                     p.start()
                     computing_pops.append(self.selected_pops[index])
-                index += 1
+                    index += 1
+                else:
+                    break
 
             #print("Computing populations:", ' '.join(computing_pops))
-            progress_callback[float].emit(float(nb) / float(batch_size))
+            progress_callback[float].emit(float(index) / float(num_sel_pops))
+            progress_callback[int].emit(index)
 
             for p in procs:
                 p.join()
-
-        progress_callback[float].emit(1.0)
 
         self.allele_frequencies = [np.array(freqs) for freqs in allele_freqs]
 

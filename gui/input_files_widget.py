@@ -10,6 +10,9 @@ from PySide6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout
 
 
 class InputFilesWidget(QWidget):
+    ind_file_parsed = Signal()
+    pops_file_parsed = Signal()
+
     def __init__(self, core):
         QWidget.__init__(self)
 
@@ -79,10 +82,14 @@ class InputFilesWidget(QWidget):
     @Slot(str)
     def checking_finished(self, worker_name):
         self.worker_finished[worker_name] = True
+
         if all([status for name, status in self.worker_finished.items()]):
             if self.core.check_input_files():
                 self.log.set_entry('main', 'Checking finished.')
                 self.log.append_entry('check', 'Parsed input files seem to have a valid structure.')
+
+        if worker_name == 'ind':
+            self.ind_file_parsed.emit()
 
     @Slot()
     def geno_check_failed(self):
@@ -125,6 +132,7 @@ class InputFilesWidget(QWidget):
     @Slot(str)
     def parsing_finished(self, worker_name):
         self.log.set_entry('main', 'Parsing finished.')
+        self.pops_file_parsed.emit()
 
     @Slot()
     def parse_pops_file(self):

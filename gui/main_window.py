@@ -3,8 +3,8 @@ from gui.log_widget import LogWidget
 from gui.input_files_widget import InputFilesWidget
 from gui.select_pops_widget import SelectPopsWidget
 
-from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout
 
 
 
@@ -27,6 +27,10 @@ class MainWindow(QWidget):
         self.sel_pops_widget = SelectPopsWidget(self.core)
         self.sel_pops_widget.log.changed.connect(self.log_widget.set_text)
 
+        # Connections
+        self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
+        self.input_files_widget.pops_file_parsed.connect(self.sel_pops_widget.init_selected_table)
+
         # Tab widget
         self.tab = QTabWidget()
         self.tab.addTab(self.input_files_widget, 'Input files')
@@ -35,10 +39,15 @@ class MainWindow(QWidget):
 
         self.set_log_source(0)
 
+        # Splitter
+        splitter = QSplitter()
+        splitter.setOrientation(Qt.Vertical)
+        splitter.addWidget(self.tab)
+        splitter.addWidget(self.log_widget)
+
         # Layout
         layout = QVBoxLayout(self)
-        layout.addWidget(self.tab)
-        layout.addWidget(self.log_widget)
+        layout.addWidget(splitter)
 
         # Window dimensions
 
