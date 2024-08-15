@@ -12,6 +12,8 @@ from PySide6.QtCore import QObject, Signal, Slot
 
 class Core(QObject):
     # Signals
+    file_path_set = Signal(str, str)
+
     input_file_paths_state = Signal(bool)
     pops_file_path_state = Signal(bool)
 
@@ -48,21 +50,25 @@ class Core(QObject):
     @Slot(str)
     def set_geno_file_path(self, file_path):
         self.geno_file_path = Path(file_path)
+        self.file_path_set.emit('geno', file_path)
         self.check_file_paths()
 
     @Slot(str)
     def set_ind_file_path(self, file_path):
         self.ind_file_path = Path(file_path)
+        self.file_path_set.emit('ind', file_path)
         self.check_file_paths()
 
     @Slot(str)
     def set_snp_file_path(self, file_path):
         self.snp_file_path = Path(file_path)
+        self.file_path_set.emit('snp', file_path)
         self.check_file_paths()
 
     @Slot(str)
     def set_pops_file_path(self, file_path):
         self.pops_file_path = Path(file_path)
+        self.file_path_set.emit('pops', file_path)
         self.pops_file_path_state.emit(self.pops_file_path.is_file())
 
     # Count number of rows and columns in .geno input file
@@ -75,12 +81,12 @@ class Core(QObject):
                 row = row.rstrip()
                 self.num_geno_cols.append(len(row))
                 if self.num_geno_rows % 1000 == 0:
-                    progress_callback[int].emit(self.num_geno_rows)
+                    progress_callback[str, str].emit('geno', f'Number of rows: {self.num_geno_rows}')
                 self.num_geno_rows += 1
 
         self.num_alleles = self.num_geno_rows
 
-        progress_callback[int].emit(self.num_geno_rows)
+        progress_callback[str, str].emit('geno', f'Number of rows: {self.num_geno_rows}')
 
     # Parse .ind file containing population indices, and count number of rows
     def parse_ind_file(self, progress_callback):
@@ -89,7 +95,7 @@ class Core(QObject):
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for index, row in enumerate(file):
-                progress_callback[int].emit(self.num_ind_rows)
+                progress_callback[str, str].emit('ind', f'Number of rows: {self.num_ind_rows}')
 
                 columns = row.split()
                 pop_name = columns[-1]
@@ -99,7 +105,7 @@ class Core(QObject):
 
         self.avail_pops = list(self.avail_pops_indices.keys())
 
-        progress_callback[int].emit(self.num_ind_rows)
+        progress_callback[str, str].emit('ind', f'Number of rows: {self.num_ind_rows}')
 
     # Parse .snp file containing allele names, and count number of rows
     def parse_snp_file(self, progress_callback):
@@ -112,10 +118,10 @@ class Core(QObject):
                 self.snp_names.append(columns[0])
 
                 if self.num_snp_rows % 1000 == 0:
-                    progress_callback[int].emit(self.num_snp_rows)
+                    progress_callback[str, str].emit('snp', f'Number of rows: {self.num_snp_rows}')
                 self.num_snp_rows += 1
 
-        progress_callback[int].emit(self.num_snp_rows)
+        progress_callback[str, str].emit('snp', f'Number of rows: {self.num_snp_rows}')
 
     # Check input file consistency
     def check_input_files(self):
@@ -145,7 +151,7 @@ class Core(QObject):
                 self.parsed_pops.append(columns[0])
 
                 num_pops += 1
-                progress_callback[int].emit(num_pops)
+                progress_callback[str, str].emit('pops', f'Number of pops: {num_pops}')
 
         self.append_pops(self.parsed_pops)
 
@@ -191,8 +197,6 @@ class Core(QObject):
         batch_size = ceil(num_sel_pops / self.num_procs)
         index = 0
 
-        #print(f'Computing {num_alleles} frequencies per population for {num_computations} populations in {batch_size} batches of {num_procs} parallel processes...')
-
         allele_freqs = [Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
         progress_callback[float].emit(0.0)
@@ -212,12 +216,12 @@ class Core(QObject):
                 else:
                     break
 
-            #print("Computing populations:", ' '.join(computing_pops))
-            progress_callback[float].emit(float(index) / float(num_sel_pops))
-            progress_callback[int].emit(index)
+            progress_callback[str].emit('Computing populations: ' + ' '.join(computing_pops))
 
             for p in procs:
                 p.join()
+
+            progress_callback[int].emit(index)
 
         self.allele_frequencies = [np.array(freqs) for freqs in allele_freqs]
 

@@ -34,7 +34,7 @@ class MainWindow(QWidget):
         # Tab widget
         self.tab = QTabWidget()
         self.tab.addTab(self.input_files_widget, 'Input files')
-        self.tab.addTab(self.sel_pops_widget, 'Select populations')
+        self.tab.addTab(self.sel_pops_widget, 'Populations')
         self.tab.currentChanged.connect(self.set_log_source)
 
         self.set_log_source(0)

@@ -2,8 +2,11 @@ from gui.log_system import LogSystem
 from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
-from PySide6.QtCore import Signal, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout
+from math import ceil
+
+from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout
+
 
 
 class SelectPopsWidget(QWidget):
@@ -18,6 +21,7 @@ class SelectPopsWidget(QWidget):
 
         # Log
         self.log = LogSystem(['main', 'progress'])
+        self.log.set_entry('main', 'Select entries from the available populations on the left table and compute their allele frequencies.')
 
         # Searchable table containing available populations
         self.search_widget = SearchableTableWidget()
@@ -31,19 +35,22 @@ class SelectPopsWidget(QWidget):
 
         # Select populations button
         self.select_button = QPushButton('Select populations')
+        self.select_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.select_button.clicked.connect(self.select_populations)
 
         # Remove populations button
         self.remove_button = QPushButton('Deselect populations')
+        self.remove_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.remove_button.clicked.connect(self.remove_populations)
 
         # Reset populations button
         self.reset_button = QPushButton('Reset populations')
+        self.reset_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.reset_button.clicked.connect(self.reset_populations)
 
         # Number of computing processes
-        num_procs_label = QLabel('Number of processes')
         self.num_procs_spin_box = QSpinBox()
+        self.num_procs_spin_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.num_procs_spin_box.setMinimum(1)
         self.num_procs_spin_box.setMaximum(9999)
         self.num_procs_spin_box.valueChanged.connect(self.core.set_num_procs)
@@ -51,17 +58,25 @@ class SelectPopsWidget(QWidget):
 
         # Compute allele frequencies files button
         self.comp_button = QPushButton('Compute frequencies')
+        self.comp_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.comp_button.clicked.connect(self.compute_frequencies)
 
         # Progress bar
         self.progress_bar = QProgressBar()
+        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(1)
+        self.progress_bar.setValue(0)
+
+        # Separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
 
         # Select table buttons layout
         hlayout = QHBoxLayout()
-        hlayout.addWidget(self.remove_button)
-        hlayout.addWidget(self.reset_button)
+        hlayout.addWidget(self.remove_button, 0, Qt.AlignJustify)
+        hlayout.addWidget(self.reset_button, 0, Qt.AlignJustify)
 
         # Select table layout
         vlayout = QVBoxLayout()
@@ -71,20 +86,28 @@ class SelectPopsWidget(QWidget):
         # Search table layout
         slayout = QVBoxLayout()
         slayout.addWidget(self.search_widget)
-        slayout.addWidget(self.select_button)
+        slayout.addWidget(self.select_button, 0, Qt.AlignHCenter)
 
         # Tables layout
         tlayout = QHBoxLayout()
         tlayout.addLayout(slayout)
         tlayout.addLayout(vlayout)
 
+        # Form layout
+        flayout = QFormLayout()
+        flayout.addRow('Number of processes:', self.num_procs_spin_box)
+
+        # Computation layout
+        glayout = QGridLayout()
+        glayout.addLayout(flayout, 0, 0, Qt.AlignLeft)
+        glayout.addWidget(self.comp_button, 1, 0, Qt.AlignRight)
+        glayout.addWidget(self.progress_bar, 0, 1, 2, 1)
+
         # Layout
         layout = QVBoxLayout(self)
         layout.addLayout(tlayout)
-        layout.addWidget(num_procs_label)
-        layout.addWidget(self.num_procs_spin_box)
-        layout.addWidget(self.comp_button)
-        layout.addWidget(self.progress_bar)
+        layout.addWidget(separator)
+        layout.addLayout(glayout)
 
     @Slot()
     def init_search_table(self):
@@ -118,28 +141,27 @@ class SelectPopsWidget(QWidget):
             table_widget_item = QTableWidgetItem(item)
             self.selected_table.setItem(index, 0, table_widget_item)
 
-    def set_log_text(self):
-        text_list = [text for key, text in self.log_text_lines.items() if len(text) > 0]
-        self.log_text = '\n'.join(text_list)
-        self.log_text_changed.emit(self.log_text)
-
-    @Slot(float)
-    def set_progress_log_text(self, percent_done):
-        self.log.set_entry('progress', f'{percent_done:.1%}')
+    @Slot(str)
+    def log_progress(self, message):
+        self.log.set_entry('progress', message)
 
     @Slot(str)
     def computing_finished(self, worker_name):
         self.log.set_entry('main', 'Computation finished.')
+        self.log.clear_entry('progress')
 
     @Slot()
     def compute_frequencies(self):
-        self.log.clear_entry('progress')
-        self.log.set_entry('main', f'Computing allele frequencies...')
+        num_sel_pops = len(self.core.selected_pops)
+        batch_size = ceil(num_sel_pops / self.core.num_procs)
 
-        self.progress_bar.setMaximum(len(self.core.selected_pops))
+        self.log.clear_entry('progress')
+        self.log.set_entry('main', f'Computing {self.core.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.core.num_procs} parallel processes...')
+
+        self.progress_bar.setMaximum(num_sel_pops)
 
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
-        worker.signals.progress[float].connect(self.set_progress_log_text)
+        worker.signals.progress[str].connect(self.log_progress)
         worker.signals.progress[int].connect(self.progress_bar.setValue)
         worker.signals.finished.connect(self.computing_finished)
 
