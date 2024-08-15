@@ -26,7 +26,7 @@ class WorkerSignals(QObject):
     finished = Signal(str)
     error = Signal(tuple)
     #result = Signal(object)
-    progress = Signal((int,), (float,), (str,), (str, str))
+    progress = Signal((int,), (float,), (str,), (str, str), (str, str, int))
 
 
 

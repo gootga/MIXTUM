@@ -20,8 +20,9 @@ class SelectPopsWidget(QWidget):
         self.thread_pool = QThreadPool()
 
         # Log
-        self.log = LogSystem(['main', 'progress'])
+        self.log = LogSystem(['main', 'progress', 'timing'])
         self.log.set_entry('main', 'Select entries from the available populations on the left table and compute their allele frequencies.')
+        self.log.append_entry('timing', '')
 
         # Searchable table containing available populations
         self.search_widget = SearchableTableWidget()
@@ -141,14 +142,13 @@ class SelectPopsWidget(QWidget):
             table_widget_item = QTableWidgetItem(item)
             self.selected_table.setItem(index, 0, table_widget_item)
 
-    @Slot(str)
-    def log_progress(self, message):
-        self.log.set_entry('progress', message)
+    @Slot(str, str, int)
+    def log_progress(self, key, message, int):
+        self.log.set_entry(key, message, int)
 
     @Slot(str)
     def computing_finished(self, worker_name):
         self.log.set_entry('main', 'Computation finished.')
-        self.log.clear_entry('progress')
 
     @Slot()
     def compute_frequencies(self):
@@ -156,12 +156,13 @@ class SelectPopsWidget(QWidget):
         batch_size = ceil(num_sel_pops / self.core.num_procs)
 
         self.log.clear_entry('progress')
+        self.log.clear_entry('timing')
         self.log.set_entry('main', f'Computing {self.core.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.core.num_procs} parallel processes...')
 
         self.progress_bar.setMaximum(num_sel_pops)
 
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
-        worker.signals.progress[str].connect(self.log_progress)
+        worker.signals.progress[str, str, int].connect(self.log_progress)
         worker.signals.progress[int].connect(self.progress_bar.setValue)
         worker.signals.finished.connect(self.computing_finished)
 

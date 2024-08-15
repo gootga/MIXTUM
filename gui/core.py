@@ -164,6 +164,11 @@ class Core(QObject):
     def reset_pops(self):
         self.selected_pops = [pop for pop in self.parsed_pops]
 
+    def time_format(self, seconds):
+        minutes = int(seconds // 60)
+        seconds = seconds % 60
+        return f'{minutes} minutes, {seconds:.1f} seconds'
+
     @Slot(int)
     def set_num_procs(self, np):
         self.num_procs = np
@@ -199,32 +204,55 @@ class Core(QObject):
 
         allele_freqs = [Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
-        progress_callback[float].emit(0.0)
         progress_callback[int].emit(0)
 
-        for nb in range(batch_size):
+        num_indices = 0
+        t1 = time()
+
+        for batch in range(batch_size):
             procs = []
             computing_pops = []
 
-            for nt in range(self.num_procs):
+            for proc in range(self.num_procs):
                 if index < num_sel_pops:
                     p = Process(target = self.population_allele_frequencies, args = (pop_indices[index], allele_freqs[index]))
                     procs.append(p)
                     p.start()
                     computing_pops.append(self.selected_pops[index])
+                    num_indices += len(pop_indices[index])
                     index += 1
                 else:
                     break
 
-            progress_callback[str].emit('Computing populations: ' + ' '.join(computing_pops))
+            progress_callback[str, str].emit('progress', 'Computing populations: ' + ' '.join(computing_pops))
 
             for p in procs:
                 p.join()
 
+            t2 = time()
+            elapsed_time = t2 - t1
+            elapsed_time_per_index = elapsed_time / num_indices
+
+            num_remaining_indices = sum([len(indices) for indices in pop_indices[index:]])
+            estimated_remaining_time = num_remaining_indices * elapsed_time_per_index
+
             progress_callback[int].emit(index)
+            progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
+            progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
 
-        self.allele_frequencies = [np.array(freqs) for freqs in allele_freqs]
+        progress_callback[str].emit('Checking and removing invalid SNPs...')
 
+        invalid_indices = np.unique(np.array([index for freqs in allele_freqs for index, freq in enumerate(freqs) if freq == -1], dtype = int))
+        self.num_valid_alleles = self.num_alleles - invalid_indices.size
+
+        for i in range(len(allele_freqs)):
+            allele_freqs[i] = np.delete(allele_freqs[i], invalid_indices)
+
+        progress_callback[str].emit(f'Number of excluded SNPs: {len(invalid_indices)} ')
+
+        self.allele_frequencies = defaultdict(list)
+        for index, pop in enumerate(self.selected_pops):
+            self.allele_frequencies[pop] = np.array(allele_freqs[index])
 
 
 
