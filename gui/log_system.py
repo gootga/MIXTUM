@@ -18,7 +18,8 @@ class LogSystem(QObject):
 
     def clear_entry(self, key):
         if key in self.block:
-            self.block[key] = ['']
+            for index in range(len(self.block[key])):
+                self.block[key][index] = ''
             self.set_block()
             self.set_text()
 

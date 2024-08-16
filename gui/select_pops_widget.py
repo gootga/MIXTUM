@@ -2,8 +2,6 @@ from gui.log_system import LogSystem
 from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
-from math import ceil
-
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
 from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout
 
@@ -20,9 +18,10 @@ class SelectPopsWidget(QWidget):
         self.thread_pool = QThreadPool()
 
         # Log
-        self.log = LogSystem(['main', 'progress', 'timing'])
+        self.log = LogSystem(['main', 'progress', 'timing', 'check'])
         self.log.set_entry('main', 'Select entries from the available populations on the left table and compute their allele frequencies.')
         self.log.append_entry('timing', '')
+        self.log.append_entry('check', '')
 
         # Searchable table containing available populations
         self.search_widget = SearchableTableWidget()
@@ -143,8 +142,8 @@ class SelectPopsWidget(QWidget):
             self.selected_table.setItem(index, 0, table_widget_item)
 
     @Slot(str, str, int)
-    def log_progress(self, key, message, int):
-        self.log.set_entry(key, message, int)
+    def log_progress(self, key, message, line_num):
+        self.log.set_entry(key, message, line_num)
 
     @Slot(str)
     def computing_finished(self, worker_name):
@@ -152,14 +151,12 @@ class SelectPopsWidget(QWidget):
 
     @Slot()
     def compute_frequencies(self):
-        num_sel_pops = len(self.core.selected_pops)
-        batch_size = ceil(num_sel_pops / self.core.num_procs)
-
+        self.log.clear_entry('main')
         self.log.clear_entry('progress')
         self.log.clear_entry('timing')
-        self.log.set_entry('main', f'Computing {self.core.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.core.num_procs} parallel processes...')
+        self.log.clear_entry('check')
 
-        self.progress_bar.setMaximum(num_sel_pops)
+        self.progress_bar.setMaximum(len(self.core.selected_pops))
 
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
         worker.signals.progress[str, str, int].connect(self.log_progress)

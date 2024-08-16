@@ -205,6 +205,7 @@ class Core(QObject):
         allele_freqs = [Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
         progress_callback[int].emit(0)
+        progress_callback[str, str, int].emit('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
 
         num_indices = 0
         t1 = time()
@@ -224,7 +225,7 @@ class Core(QObject):
                 else:
                     break
 
-            progress_callback[str, str].emit('progress', 'Computing populations: ' + ' '.join(computing_pops))
+            progress_callback[str, str, int].emit('progress', 'Computing populations: ' + ' '.join(computing_pops), 0)
 
             for p in procs:
                 p.join()
@@ -240,7 +241,7 @@ class Core(QObject):
             progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
             progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
 
-        progress_callback[str].emit('Checking and removing invalid SNPs...')
+        progress_callback[str, str, int].emit('check', 'Checking and removing invalid SNPs...', 0)
 
         invalid_indices = np.unique(np.array([index for freqs in allele_freqs for index, freq in enumerate(freqs) if freq == -1], dtype = int))
         self.num_valid_alleles = self.num_alleles - invalid_indices.size
@@ -248,7 +249,8 @@ class Core(QObject):
         for i in range(len(allele_freqs)):
             allele_freqs[i] = np.delete(allele_freqs[i], invalid_indices)
 
-        progress_callback[str].emit(f'Number of excluded SNPs: {len(invalid_indices)} ')
+        progress_callback[str, str, int].emit('check', 'Checking SNPs finished.', 0)
+        progress_callback[str, str, int].emit('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
 
         self.allele_frequencies = defaultdict(list)
         for index, pop in enumerate(self.selected_pops):
