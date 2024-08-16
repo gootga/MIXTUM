@@ -3,7 +3,7 @@ from pathlib import Path
 from collections import defaultdict
 import numpy as np
 from time import time
-from multiprocessing import Process, Array
+from multiprocessing import Process, Array, Event
 from math import ceil
 #import matplotlib.pyplot as plt
 
@@ -43,6 +43,8 @@ class Core(QObject):
         self.num_procs = 1
         self.num_alleles = 0
         self.allele_frequencies = defaultdict(list)
+
+        self.event = Event()
 
     def check_file_paths(self):
         self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
@@ -169,6 +171,10 @@ class Core(QObject):
         seconds = seconds % 60
         return f'{minutes} minutes, {seconds:.1f} seconds'
 
+    @Slot()
+    def stop_computation(self):
+        self.event.set()
+
     @Slot(int)
     def set_num_procs(self, np):
         self.num_procs = np
@@ -193,9 +199,13 @@ class Core(QObject):
         with self.geno_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for index, row in enumerate(file):
                 allele_freqs[index] = allele_frequency([int(row[i]) for i in pop_indices])
+                if self.event.is_set():
+                    break
 
     # Parallel compute frequencies of all populations
     def parallel_compute_populations_frequencies(self, progress_callback):
+        self.event = Event()
+
         pop_indices = [self.avail_pops_indices[pop] for pop in self.selected_pops]
 
         num_sel_pops = len(self.selected_pops)
@@ -230,6 +240,9 @@ class Core(QObject):
             for p in procs:
                 p.join()
 
+            if self.event.is_set():
+                break
+
             t2 = time()
             elapsed_time = t2 - t1
             elapsed_time_per_index = elapsed_time / num_indices
@@ -241,6 +254,14 @@ class Core(QObject):
             progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
             progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
 
+        if self.event.is_set():
+            progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
+            progress_callback[str, str, int].emit('progress', 'Allele frequencies unchanged from previous computation.', 0)
+            progress_callback[str, str, int].emit('timing', '', 0)
+            return
+
+        progress_callback[str, str, int].emit('main', 'Computation finished.', 0)
+        progress_callback[str, str, int].emit('progress', '', 0)
         progress_callback[str, str, int].emit('check', 'Checking and removing invalid SNPs...', 0)
 
         invalid_indices = np.unique(np.array([index for freqs in allele_freqs for index, freq in enumerate(freqs) if freq == -1], dtype = int))

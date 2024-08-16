@@ -61,6 +61,11 @@ class SelectPopsWidget(QWidget):
         self.comp_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.comp_button.clicked.connect(self.compute_frequencies)
 
+        # Stop computation button
+        self.stop_button = QPushButton('Stop computation')
+        self.stop_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.stop_button.clicked.connect(self.core.stop_computation)
+
         # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -99,9 +104,10 @@ class SelectPopsWidget(QWidget):
 
         # Computation layout
         glayout = QGridLayout()
-        glayout.addLayout(flayout, 0, 0, Qt.AlignLeft)
+        glayout.addLayout(flayout, 0, 0, 1, 2, Qt.AlignLeft)
         glayout.addWidget(self.comp_button, 1, 0, Qt.AlignRight)
-        glayout.addWidget(self.progress_bar, 0, 1, 2, 1)
+        glayout.addWidget(self.stop_button, 1, 1, Qt.AlignRight)
+        glayout.addWidget(self.progress_bar, 0, 2, 2, 1)
 
         # Layout
         layout = QVBoxLayout(self)
@@ -145,10 +151,6 @@ class SelectPopsWidget(QWidget):
     def log_progress(self, key, message, line_num):
         self.log.set_entry(key, message, line_num)
 
-    @Slot(str)
-    def computing_finished(self, worker_name):
-        self.log.set_entry('main', 'Computation finished.')
-
     @Slot()
     def compute_frequencies(self):
         self.log.clear_entry('main')
@@ -161,6 +163,5 @@ class SelectPopsWidget(QWidget):
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
         worker.signals.progress[str, str, int].connect(self.log_progress)
         worker.signals.progress[int].connect(self.progress_bar.setValue)
-        worker.signals.finished.connect(self.computing_finished)
 
         self.thread_pool.start(worker)
