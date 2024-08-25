@@ -25,7 +25,7 @@ class WorkerSignals(QObject):
     '''
     finished = Signal(str)
     error = Signal(tuple)
-    #result = Signal(object)
+    result = Signal(bool)
     progress = Signal((int,), (float,), (str,), (str, str), (str, str, int))
 
 
@@ -65,13 +65,14 @@ class Worker(QRunnable):
 
         # Retrieve args/kwargs here; and fire processing using them
         try:
-            #result = self.fn(*self.args, **self.kwargs)
-            self.fn(*self.args, **self.kwargs)
+            result = self.fn(*self.args, **self.kwargs)
         except:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
-        #else:
-            #self.signals.result.emit(result)  # Return the result of the processing
+        else:
+            # Return the result of the processing
+            self.signals.result.emit(result)
         finally:
-            self.signals.finished.emit(self.name)  # Done
+            # Done
+            self.signals.finished.emit(self.name)

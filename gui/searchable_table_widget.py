@@ -1,4 +1,4 @@
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QLineEdit, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QVBoxLayout
 
 
@@ -15,6 +15,7 @@ class SearchableTableWidget(QWidget):
 
         # Search input edit
         self.search_edit = QLineEdit()
+        self.search_edit.setPlaceholderText('Search population...')
         self.search_edit.textChanged.connect(self.search_table)
 
         # Table widget
@@ -40,6 +41,7 @@ class SearchableTableWidget(QWidget):
 
         for index, item in enumerate(table):
             table_widget_item = QTableWidgetItem(item)
+            table_widget_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             self.table_widget.setItem(index, 0, table_widget_item)
 
         self.table_widget.resizeColumnsToContents()

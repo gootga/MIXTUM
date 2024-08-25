@@ -3,11 +3,13 @@ from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout, QGroupBox
 
 
 
 class SelectPopsWidget(QWidget):
+    computation_result = Signal(bool)
+
     def __init__(self, core):
         QWidget.__init__(self)
 
@@ -88,15 +90,23 @@ class SelectPopsWidget(QWidget):
         vlayout.addWidget(self.selected_table)
         vlayout.addLayout(hlayout)
 
+        # Select group box
+        select_group = QGroupBox('Selected populations table')
+        select_group.setLayout(vlayout)
+
         # Search table layout
         slayout = QVBoxLayout()
         slayout.addWidget(self.search_widget)
         slayout.addWidget(self.select_button, 0, Qt.AlignHCenter)
 
+        # Search group box
+        search_group = QGroupBox('Search and select from available populations')
+        search_group.setLayout(slayout)
+
         # Tables layout
         tlayout = QHBoxLayout()
-        tlayout.addLayout(slayout)
-        tlayout.addLayout(vlayout)
+        tlayout.addWidget(search_group)
+        tlayout.addWidget(select_group)
 
         # Form layout
         flayout = QFormLayout()
@@ -145,6 +155,7 @@ class SelectPopsWidget(QWidget):
 
         for index, item in enumerate(pops):
             table_widget_item = QTableWidgetItem(item)
+            table_widget_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             self.selected_table.setItem(index, 0, table_widget_item)
 
     @Slot(str, str, int)
@@ -163,5 +174,6 @@ class SelectPopsWidget(QWidget):
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
         worker.signals.progress[str, str, int].connect(self.log_progress)
         worker.signals.progress[int].connect(self.progress_bar.setValue)
+        worker.signals.result.connect(self.computation_result)
 
         self.thread_pool.start(worker)

@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QMetaMethod
 
 
 class LogSystem(QObject):
@@ -47,3 +47,7 @@ class LogSystem(QObject):
             self.block[key][index] = text
             self.set_block()
             self.set_text()
+
+    def is_changed_signal_connected(self):
+        changed_signal = QMetaMethod.fromSignal(self.changed)
+        return self.isSignalConnected(changed_signal)

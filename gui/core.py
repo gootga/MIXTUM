@@ -46,6 +46,11 @@ class Core(QObject):
 
         self.event = Event()
 
+        self.hybrid_pop = ''
+        self.parent1_pop = ''
+        self.parent2_pop = ''
+        self.aux_pops = []
+
     def check_file_paths(self):
         self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
 
@@ -90,6 +95,8 @@ class Core(QObject):
 
         progress_callback[str, str].emit('geno', f'Number of rows: {self.num_geno_rows}')
 
+        return True
+
     # Parse .ind file containing population indices, and count number of rows
     def parse_ind_file(self, progress_callback):
         self.avail_pops_indices = defaultdict(list)
@@ -109,6 +116,8 @@ class Core(QObject):
 
         progress_callback[str, str].emit('ind', f'Number of rows: {self.num_ind_rows}')
 
+        return True
+
     # Parse .snp file containing allele names, and count number of rows
     def parse_snp_file(self, progress_callback):
         self.snp_names = []
@@ -124,6 +133,8 @@ class Core(QObject):
                 self.num_snp_rows += 1
 
         progress_callback[str, str].emit('snp', f'Number of rows: {self.num_snp_rows}')
+
+        return True
 
     # Check input file consistency
     def check_input_files(self):
@@ -156,6 +167,8 @@ class Core(QObject):
                 progress_callback[str, str].emit('pops', f'Number of pops: {num_pops}')
 
         self.append_pops(self.parsed_pops)
+
+        return True
 
     def append_pops(self, pops):
         self.selected_pops += pops
@@ -258,7 +271,7 @@ class Core(QObject):
             progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
             progress_callback[str, str, int].emit('progress', 'Allele frequencies unchanged from previous computation.', 0)
             progress_callback[str, str, int].emit('timing', '', 0)
-            return
+            return False
 
         progress_callback[str, str, int].emit('main', 'Computation finished.', 0)
         progress_callback[str, str, int].emit('progress', '', 0)
@@ -277,7 +290,53 @@ class Core(QObject):
         for index, pop in enumerate(self.selected_pops):
             self.allele_frequencies[pop] = np.array(allele_freqs[index])
 
+        self.init_admixture_model()
 
+        return True
+
+    # Init default admixture model
+    def init_admixture_model(self):
+        self.hybrid_pop = self.selected_pops[0]
+        self.parent1_pop = self.selected_pops[1]
+        self.parent2_pop = self.selected_pops[2]
+        self.aux_pops = self.selected_pops[3:]
+
+    # Set hybrid population and check the rest
+    def set_hybrid_pop(self, pop):
+        if self.parent1_pop == pop:
+            self.parent1_pop = self.hybrid_pop
+        elif self.parent2_pop == pop:
+            self.parent2_pop = self.hybrid_pop
+        elif pop in self.aux_pops:
+            self.aux_pops.remove(pop)
+
+        self.hybrid_pop = pop
+
+    # Set parent 1 population and check the rest
+    def set_parent1_pop(self, pop):
+        if self.hybrid_pop == pop:
+            self.hybrid_pop = self.parent1_pop
+        elif self.parent2_pop == pop:
+            self.parent2_pop = self.parent1_pop
+        elif pop in self.aux_pops:
+            self.aux_pops.remove(pop)
+
+        self.parent1_pop = pop
+
+    # Set parent 2 population and check the rest
+    def set_parent2_pop(self, pop):
+        if self.hybrid_pop == pop:
+            self.hybrid_pop = self.parent2_pop
+        elif self.parent1_pop == pop:
+            self.parent1_pop = self.parent2_pop
+        elif pop in self.aux_pops:
+            self.aux_pops.remove(pop)
+
+        self.parent2_pop = pop
+
+    # Set auxiliary populations
+    def set_aux_pops(self, pops):
+        self.aux_pops = [pop for pop in pops if pop != self.hybrid_pop and pop != self.parent1_pop and pop != self.parent2_pop]
 
 # Parse input file containing selected populations
 
