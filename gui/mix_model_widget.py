@@ -1,7 +1,9 @@
 from gui.log_system import LogSystem
+from gui.plots import Plot
+from gui.worker import Worker
 
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QGridLayout
+from PySide6.QtCore import Qt, Slot, QThreadPool
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter
 
 
 
@@ -11,6 +13,9 @@ class MixModelWidget(QWidget):
 
         # Core
         self.core = core
+
+        # Thread pool
+        self.thread_pool = QThreadPool()
 
         # Log
         self.log = LogSystem(['main'])
@@ -54,12 +59,55 @@ class MixModelWidget(QWidget):
         self.parent2_table.itemSelectionChanged.connect(self.parent2_changed)
         self.aux_table.itemSelectionChanged.connect(self.aux_changed)
 
+        # Compute button
+        self.compute_button = QPushButton('Compute results')
+        self.compute_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.compute_button.clicked.connect(self.compute_results)
+
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(9)
+        self.progress_bar.setValue(0)
+
+        # Plots
+        self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100)
+        self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100)
+        self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
+
+        # Plots tab widget
+        tab_widget = QTabWidget()
+        tab_widget.addTab(self.plot_prime, 'Renormalized admixture')
+        tab_widget.addTab(self.plot_std, 'Standard admixture')
+        tab_widget.addTab(self.plot_histogram, 'f4 ratio histogram')
+
+        # Tables layout
+        tlayout = QHBoxLayout()
+        tlayout.addWidget(self.hybrid_table)
+        tlayout.addWidget(self.parent1_table)
+        tlayout.addWidget(self.parent2_table)
+        tlayout.addWidget(self.aux_table)
+
+        # Tables widget
+        twidget = QWidget()
+        twidget.setLayout(tlayout)
+
+        # Splitter
+        splitter = QSplitter()
+        splitter.setOrientation(Qt.Horizontal)
+        splitter.addWidget(twidget)
+        splitter.addWidget(tab_widget)
+
+        # Lower layout
+        llayout = QHBoxLayout()
+        llayout.addWidget(self.compute_button)
+        llayout.addWidget(self.progress_bar)
+
         # Layout
-        layout = QGridLayout(self)
-        layout.addWidget(self.hybrid_table, 0, 0)
-        layout.addWidget(self.parent1_table, 0, 1)
-        layout.addWidget(self.parent2_table, 0, 2)
-        layout.addWidget(self.aux_table, 0, 3)
+        layout = QVBoxLayout(self)
+        layout.addWidget(splitter)
+        layout.addLayout(llayout)
 
     @Slot(bool)
     def init_pop_tables(self, result):
@@ -156,3 +204,19 @@ class MixModelWidget(QWidget):
         sel_items = self.aux_table.selectedItems()
         self.core.set_aux_pops([item.text() for item in sel_items])
         self.check_aux_table_selection()
+
+    @Slot(str)
+    def computation_finished(self, worker_name):
+        self.log.set_entry('main', self.core.admixture_data())
+
+        self.plot_prime.plot_fit(self.core.f4ab_prime, self.core.f4xb_prime, self.core.alpha, f'Renormalized admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4'({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4'({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
+        self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
+        self.plot_histogram.plot_histogram(self.core.alpha_ratio_hist, f'{self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', 'f4 ratio', 'Counts')
+
+    @Slot()
+    def compute_results(self):
+        worker = Worker('results', self.core.compute_results)
+        worker.signals.progress[int].connect(self.progress_bar.setValue)
+        worker.signals.finished.connect(self.computation_finished)
+
+        self.thread_pool.start(worker)

@@ -3,7 +3,7 @@ from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGridLayout, QGroupBox
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox
 
 
 
@@ -70,7 +70,7 @@ class SelectPopsWidget(QWidget):
 
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(1)
         self.progress_bar.setValue(0)
@@ -113,17 +113,17 @@ class SelectPopsWidget(QWidget):
         flayout.addRow('Number of processes:', self.num_procs_spin_box)
 
         # Computation layout
-        glayout = QGridLayout()
-        glayout.addLayout(flayout, 0, 0, 1, 2, Qt.AlignLeft)
-        glayout.addWidget(self.comp_button, 1, 0, Qt.AlignRight)
-        glayout.addWidget(self.stop_button, 1, 1, Qt.AlignRight)
-        glayout.addWidget(self.progress_bar, 0, 2, 2, 1)
+        clayout = QHBoxLayout()
+        clayout.addLayout(flayout)
+        clayout.addWidget(self.comp_button)
+        clayout.addWidget(self.stop_button)
+        clayout.addWidget(self.progress_bar)
 
         # Layout
         layout = QVBoxLayout(self)
         layout.addLayout(tlayout)
         layout.addWidget(separator)
-        layout.addLayout(glayout)
+        layout.addLayout(clayout)
 
     @Slot()
     def init_search_table(self):

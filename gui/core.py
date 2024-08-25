@@ -42,6 +42,7 @@ class Core(QObject):
 
         self.num_procs = 1
         self.num_alleles = 0
+        self.num_valid_alleles = 0
         self.allele_frequencies = defaultdict(list)
 
         self.event = Event()
@@ -50,6 +51,28 @@ class Core(QObject):
         self.parent1_pop = ''
         self.parent2_pop = ''
         self.aux_pops = []
+
+        self.alpha_pre_jl = 0
+        self.cosine_pre_jl = 0
+        self.angle_pre_jl = 0
+        self.percentage_pre_jl = 0
+        self.f3_test = 0
+        self.f4ab_prime = []
+        self.f4xb_prime = []
+        self.alpha = 0
+        self.alpha_error = 0
+        self.f4ab_std = []
+        self.f4xb_std = []
+        self.alpha_std = 0
+        self.alpha_std_error =0
+        self.cosine_post_jl = 0
+        self.angle_post_jl = 0
+        self.percentage_post_jl = 0
+        self.alpha_ratio = []
+        self.alpha_ratio_avg = 0
+        self.alpha_ratio_std_dev = 0
+        self.alpha_ratio_hist = None
+        self.num_cases = 0
 
     def check_file_paths(self):
         self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
@@ -337,6 +360,199 @@ class Core(QObject):
     # Set auxiliary populations
     def set_aux_pops(self, pops):
         self.aux_pops = [pop for pop in pops if pop != self.hybrid_pop and pop != self.parent1_pop and pop != self.parent2_pop]
+
+    # Computation of alpha pre JL
+    def mixing_coefficient_pre_jl(self):
+        parent_diff = self.allele_frequencies[self.parent1_pop] - self.allele_frequencies[self.parent2_pop]
+        self.alpha_pre_jl = np.dot(self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop], parent_diff) / np.dot(parent_diff, parent_diff)
+
+    # Computation of admixture angle pre JL
+    def admixture_angle_pre_jl(self):
+        xa = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop]
+        xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
+
+        self.cosine_pre_jl = np.dot(xa, xb) / np.sqrt(np.dot(xa, xa) * np.dot(xb, xb))
+        self.angle_pre_jl = np.arccos(self.cosine_pre_jl) * 180 / np.pi
+        self.percentage_pre_jl = np.arccos(self.cosine_pre_jl) / np.pi
+
+    # Computation of f3
+    def f3(self):
+        num_alleles = self.allele_frequencies[self.hybrid_pop].size
+        self.f3_test = np.dot(self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop], self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]) / num_alleles
+
+    # Computation of f4 prime
+    def f4_prime(self):
+        num_aux_pops = len(self.aux_pops)
+        num_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
+
+        self.f4ab_prime = np.zeros(num_pairs)
+        self.f4xb_prime = np.zeros(num_pairs)
+
+        ab = self.allele_frequencies[self.parent1_pop] - self.allele_frequencies[self.parent2_pop]
+        xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
+
+        index = 0
+
+        for i in range(num_aux_pops):
+            for j in range(i + 1, num_aux_pops):
+                ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
+                norm_ij = np.linalg.norm(ij)
+                self.f4ab_prime[index] = np.dot(ab, ij) / norm_ij
+                self.f4xb_prime[index] = np.dot(xb, ij) / norm_ij
+                index += 1
+
+    # Computation of f4 standard
+    def f4_std(self):
+        num_aux_pops = len(self.aux_pops)
+        num_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
+
+        self.f4ab_std = np.zeros(num_pairs)
+        self.f4xb_std = np.zeros(num_pairs)
+
+        ab = self.allele_frequencies[self.parent1_pop] - self.allele_frequencies[self.parent2_pop]
+        xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
+
+        index = 0
+
+        for i in range(num_aux_pops):
+            for j in range(i + 1, num_aux_pops):
+                ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
+                self.f4ab_std[index] = np.dot(ab, ij)
+                self.f4xb_std[index] = np.dot(xb, ij)
+                index += 1
+
+        num_alleles = self.allele_frequencies[self.hybrid_pop].size
+
+        self.f4ab_std /= num_alleles
+        self.f4xb_std /= num_alleles
+
+    # Least squares fit
+    def least_squares(self, x, y):
+        dim = len(x)
+
+        A = np.vstack([x, np.zeros(dim)]).T
+        alpha = np.linalg.lstsq(A, y)[0][0]
+
+        Q = 0
+        for i in range(dim):
+            Q += (y[i] - alpha * x[i]) ** 2
+
+        x_avg = 0
+        for i in range(dim):
+            x_avg += x[i]
+        x_avg /= dim
+
+        x_dev = 0
+        for i in range(dim):
+            x_dev += (x[i] - x_avg) ** 2
+
+        s_alpha = np.sqrt(Q / ((dim - 2) * x_dev))
+        t = 1.98
+
+        error = s_alpha * t
+
+        return alpha, error
+
+    # Computation of alpha
+    def alpha_prime(self):
+        self.alpha, self.alpha_error = least_squares(self.f4ab_prime, self.f4xb_prime)
+
+    # Computation of alpha standard
+    def alpha_standard(self):
+        self.alpha_std, self.alpha_std_error = least_squares(self.f4ab_std, self.f4xb_std)
+
+    # Computation of admixture angle post JL
+    def admixture_angle_post_jl(self):
+        num_aux_pops = len(self.aux_pops)
+        num_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
+
+        xa = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop]
+        xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
+
+        sum1 = 0
+        sum2 = 0
+        sum3 = 0
+
+        for i in range(num_aux_pops):
+            for j in range(i + 1, num_aux_pops):
+                ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
+
+                xaij = np.dot(xa, ij)
+                xbij = np.dot(xb, ij)
+                ijij = np.dot(ij, ij)
+
+                sum1 += xaij * xbij / ijij
+                sum2 += (xaij ** 2) / ijij
+                sum3 += (xbij ** 2) / ijij
+
+        self.cosine_post_jl = sum1 / np.sqrt(sum2 * sum3)
+        self.angle_post_jl = np.arccos(self.cosine_post_jl) * 180 / np.pi
+        self.percentage_post_jl = np.arccos(self.cosine_post_jl) / np.pi
+
+    # Computation of f4-ratio
+    def f4_ratio(self):
+        num_aux_pops = len(self.aux_pops)
+        num_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
+
+        xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
+        ab = self.allele_frequencies[self.parent1_pop] - self.allele_frequencies[self.parent2_pop]
+
+        self.alpha_ratio = np.zeros(num_pairs)
+
+        index = 0
+
+        for i in range(num_aux_pops):
+            for j in range(i + 1, num_aux_pops):
+                ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
+                self.alpha_ratio[index] = np.dot(xb, ij) / np.dot(ab, ij)
+                index += 1
+
+        alpha_01 = self.alpha_ratio[(self.alpha_ratio >= 0) & (self.alpha_ratio <= 1)]
+        self.alpha_ratio_avg = np.average(alpha_01)
+        self.alpha_ratio_std_dev = np.std(alpha_01) * 1.96
+        self.alpha_ratio_hist = np.histogram(self.alpha_ratio, 20)
+        self.num_cases = alpha_01.size
+
+    def compute_results(self, progress_callback):
+        progress_callback[int].emit(0)
+        self.mixing_coefficient_pre_jl()
+        progress_callback[int].emit(1)
+        self.admixture_angle_pre_jl()
+        progress_callback[int].emit(2)
+        self.f3()
+        progress_callback[int].emit(3)
+        self.f4_prime()
+        progress_callback[int].emit(4)
+        self.alpha_prime()
+        progress_callback[int].emit(5)
+        self.f4_std()
+        progress_callback[int].emit(6)
+        self.alpha_standard()
+        progress_callback[int].emit(7)
+        self.admixture_angle_post_jl()
+        progress_callback[int].emit(8)
+        self.f4_ratio()
+        progress_callback[int].emit(9)
+
+        return True
+
+    def admixture_data(self):
+        num_aux_pops = len(self.aux_pops)
+        num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
+
+        text = f'Admixture model: {self.hybrid_pop} = {self.parent1_pop} + {self.parent2_pop}\n'
+        text += f'SNPs employed: {self.num_valid_alleles} / {self.num_alleles}\n'
+        text += f'Auxiliary populations: {num_aux_pops}\n'
+        text += f'Auxiliary pairs: {num_aux_pairs}\n'
+        text += f'Cos pre-JL:  {self.cosine_pre_jl:7.4f} ---> Angle pre-JL:  {self.angle_pre_jl:7.2f} deg vs 180 deg: {self.percentage_pre_jl:.1%}\n'
+        text += f'Cos post-JL: {self.cosine_post_jl:7.4f} ---> Angle post-JL: {self.angle_post_jl:7.2f} deg vs 180 deg: {self.percentage_post_jl:.1%}\n'
+        text += f'Alpha pre-JL:     {self.alpha_pre_jl:6.4f}\n'
+        text += f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n'
+        text += f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n'
+        text += f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n'
+        text += f'Standard admixture test: f3(c1, c2; x) < 0 ? {self.f3_test:8.6f}'
+
+        return text
 
 # Parse input file containing selected populations
 
