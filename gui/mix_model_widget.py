@@ -4,7 +4,7 @@ from gui.plots import Plot
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
 
 
 
@@ -76,6 +76,18 @@ class MixModelWidget(QWidget):
         self.progress_bar.setMaximum(9)
         self.progress_bar.setValue(0)
 
+        # Save f4-points button
+        self.save_f4_button = QPushButton('Save f4-points')
+        self.save_f4_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.save_f4_button.setEnabled(False)
+        self.save_f4_button.clicked.connect(self.save_f4_points)
+
+        # Save results button
+        self.save_results_button = QPushButton('Save admixture data')
+        self.save_results_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.save_results_button.setEnabled(False)
+        self.save_results_button.clicked.connect(self.save_results)
+
         # Plots
         self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100)
         self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100)
@@ -119,13 +131,13 @@ class MixModelWidget(QWidget):
         self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.addWidget(twidget)
         self.splitter.addWidget(self.plots_panel)
-        #self.splitter.setStretchFactor(0, 1.0)
-        #self.splitter.setStretchFactor(1, 7.0)
 
         # Lower layout
         llayout = QHBoxLayout()
         llayout.addWidget(self.compute_button)
         llayout.addWidget(self.progress_bar)
+        llayout.addWidget(self.save_f4_button)
+        llayout.addWidget(self.save_results_button)
 
         # Layout
         layout = QVBoxLayout(self)
@@ -239,6 +251,9 @@ class MixModelWidget(QWidget):
         self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_histogram.plot_histogram(self.core.alpha_ratio_hist, f'{self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', 'f4 ratio', 'Counts')
 
+        self.save_f4_button.setEnabled(True)
+        self.save_results_button.setEnabled(True)
+
     @Slot()
     def compute_results(self):
         worker = Worker('results', self.core.compute_results)
@@ -255,5 +270,25 @@ class MixModelWidget(QWidget):
             self.plots_panel.show()
         else:
             self.splitter.addWidget(self.plots_panel)
-            #self.splitter.setStretchFactor(0, 1.0)
-            #self.splitter.setStretchFactor(1, 7.0)
+
+    @Slot()
+    def save_f4_points(self):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+
+        file_names = []
+        if dialog.exec():
+            file_names = dialog.selectedFiles()
+            file_path = file_names[0]
+            self.core.save_f4_points(file_path)
+
+    @Slot()
+    def save_results(self):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+
+        file_names = []
+        if dialog.exec():
+            file_names = dialog.selectedFiles()
+            file_path = file_names[0]
+            self.core.save_admixture_data(file_path)

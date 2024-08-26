@@ -3,7 +3,7 @@ from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QHeaderView, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QHeaderView, QAbstractItemView, QFileDialog
 
 
 
@@ -78,6 +78,12 @@ class SelectPopsWidget(QWidget):
         self.progress_bar.setMaximum(1)
         self.progress_bar.setValue(0)
 
+        # Save frequencies button
+        self.save_freqs_button = QPushButton('Save frequencies')
+        self.save_freqs_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.save_freqs_button.setEnabled(False)
+        self.save_freqs_button.clicked.connect(self.save_frequencies)
+
         # Separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
@@ -121,6 +127,7 @@ class SelectPopsWidget(QWidget):
         clayout.addWidget(self.comp_button)
         clayout.addWidget(self.stop_button)
         clayout.addWidget(self.progress_bar)
+        clayout.addWidget(self.save_freqs_button)
 
         # Layout
         layout = QVBoxLayout(self)
@@ -171,6 +178,7 @@ class SelectPopsWidget(QWidget):
     @Slot(str)
     def computation_finished(self, worker_name):
         self.stop_button.setEnabled(False)
+        self.save_freqs_button.setEnabled(True)
 
     @Slot()
     def compute_frequencies(self):
@@ -190,3 +198,14 @@ class SelectPopsWidget(QWidget):
         worker.signals.finished.connect(self.computation_finished)
 
         self.thread_pool.start(worker)
+
+    @Slot()
+    def save_frequencies(self):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+
+        file_names = []
+        if dialog.exec():
+            file_names = dialog.selectedFiles()
+            file_path = file_names[0]
+            self.core.save_population_allele_frequencies(file_path)
