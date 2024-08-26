@@ -5,7 +5,7 @@ from gui.select_pops_widget import SelectPopsWidget
 from gui.mix_model_widget import MixModelWidget
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout, QSizePolicy
 
 
 
@@ -76,3 +76,7 @@ class MainWindow(QWidget):
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
             self.mix_model_widget.log.changed.connect(self.log_widget.set_text)
             self.mix_model_widget.log.set_text()
+
+    def closeEvent(self, event):
+        self.mix_model_widget.plots_panel = None
+        event.accept()

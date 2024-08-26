@@ -1,9 +1,10 @@
 from gui.log_system import LogSystem
+from gui.open_widget import OpenWidget
 from gui.plots import Plot
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView
 
 
 
@@ -27,6 +28,7 @@ class MixModelWidget(QWidget):
         self.hybrid_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.hybrid_table.verticalHeader().setVisible(False)
         self.hybrid_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.hybrid_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.hybrid_table.setHorizontalHeaderLabels(['Hybrid'])
 
         # Parent 1 table widget
@@ -35,8 +37,8 @@ class MixModelWidget(QWidget):
         self.parent1_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.parent1_table.verticalHeader().setVisible(False)
         self.parent1_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.parent1_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.parent1_table.setHorizontalHeaderLabels(['Parent 1'])
-
 
         # Parent 2 table widget
         self.parent2_table = QTableWidget()
@@ -44,6 +46,7 @@ class MixModelWidget(QWidget):
         self.parent2_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.parent2_table.verticalHeader().setVisible(False)
         self.parent2_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.parent2_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.parent2_table.setHorizontalHeaderLabels(['Parent 2'])
 
         # Auxiliaries table widget
@@ -51,6 +54,7 @@ class MixModelWidget(QWidget):
         self.aux_table.setColumnCount(1)
         self.aux_table.verticalHeader().setVisible(False)
         self.aux_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.aux_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.aux_table.setHorizontalHeaderLabels(['Auxiliaries'])
 
         # Connections
@@ -61,12 +65,13 @@ class MixModelWidget(QWidget):
 
         # Compute button
         self.compute_button = QPushButton('Compute results')
-        self.compute_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.compute_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.compute_button.setEnabled(False)
         self.compute_button.clicked.connect(self.compute_results)
 
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(9)
         self.progress_bar.setValue(0)
@@ -76,11 +81,27 @@ class MixModelWidget(QWidget):
         self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100)
         self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
 
+        # Detach / attach plots panel button
+        self.detach_button = QPushButton('Detach plots')
+        self.detach_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.detach_button.setCheckable(True)
+        self.detach_button.clicked.connect(self.detach_plots)
+
         # Plots tab widget
-        tab_widget = QTabWidget()
-        tab_widget.addTab(self.plot_prime, 'Renormalized admixture')
-        tab_widget.addTab(self.plot_std, 'Standard admixture')
-        tab_widget.addTab(self.plot_histogram, 'f4 ratio histogram')
+        self.tab_widget = QTabWidget()
+        self.tab_widget.addTab(self.plot_prime, 'Renormalized admixture')
+        self.tab_widget.addTab(self.plot_std, 'Standard admixture')
+        self.tab_widget.addTab(self.plot_histogram, 'f4 ratio histogram')
+
+        # Plots panel layout
+        playout = QVBoxLayout()
+        playout.addWidget(self.tab_widget)
+        playout.addWidget(self.detach_button, 0, Qt.AlignCenter)
+
+        # Plots panel
+        self.plots_panel = OpenWidget()
+        self.plots_panel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding)
+        self.plots_panel.setLayout(playout)
 
         # Tables layout
         tlayout = QHBoxLayout()
@@ -94,10 +115,12 @@ class MixModelWidget(QWidget):
         twidget.setLayout(tlayout)
 
         # Splitter
-        splitter = QSplitter()
-        splitter.setOrientation(Qt.Horizontal)
-        splitter.addWidget(twidget)
-        splitter.addWidget(tab_widget)
+        self.splitter = QSplitter()
+        self.splitter.setOrientation(Qt.Horizontal)
+        self.splitter.addWidget(twidget)
+        self.splitter.addWidget(self.plots_panel)
+        #self.splitter.setStretchFactor(0, 1.0)
+        #self.splitter.setStretchFactor(1, 7.0)
 
         # Lower layout
         llayout = QHBoxLayout()
@@ -106,7 +129,7 @@ class MixModelWidget(QWidget):
 
         # Layout
         layout = QVBoxLayout(self)
-        layout.addWidget(splitter)
+        layout.addWidget(self.splitter)
         layout.addLayout(llayout)
 
     @Slot(bool)
@@ -123,6 +146,8 @@ class MixModelWidget(QWidget):
         self.check_table_selection(self.parent1_table, self.core.parent1_pop)
         self.check_table_selection(self.parent2_table, self.core.parent2_pop)
         self.check_aux_table_selection()
+
+        self.compute_button.setEnabled(True)
 
     def check_table_selection(self, table, pop):
         self.hybrid_table.itemSelectionChanged.disconnect(self.hybrid_changed)
@@ -204,6 +229,7 @@ class MixModelWidget(QWidget):
         sel_items = self.aux_table.selectedItems()
         self.core.set_aux_pops([item.text() for item in sel_items])
         self.check_aux_table_selection()
+        self.compute_button.setEnabled(len(self.aux_table.selectedItems()) > 0)
 
     @Slot(str)
     def computation_finished(self, worker_name):
@@ -220,3 +246,14 @@ class MixModelWidget(QWidget):
         worker.signals.finished.connect(self.computation_finished)
 
         self.thread_pool.start(worker)
+
+    @Slot(bool)
+    def detach_plots(self, checked):
+        if checked:
+            self.plots_panel.setParent(None)
+            self.plots_panel.setWindowFlag(Qt.WindowCloseButtonHint, False)
+            self.plots_panel.show()
+        else:
+            self.splitter.addWidget(self.plots_panel)
+            #self.splitter.setStretchFactor(0, 1.0)
+            #self.splitter.setStretchFactor(1, 7.0)

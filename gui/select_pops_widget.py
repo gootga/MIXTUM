@@ -3,7 +3,7 @@ from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox
+from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QLabel, QSpinBox, QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QHeaderView, QAbstractItemView
 
 
 
@@ -34,6 +34,7 @@ class SelectPopsWidget(QWidget):
         self.selected_table.verticalHeader().setVisible(False)
         self.selected_table.horizontalHeader().setVisible(False)
         self.selected_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.selected_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         # Select populations button
         self.select_button = QPushButton('Select populations')
@@ -61,11 +62,13 @@ class SelectPopsWidget(QWidget):
         # Compute allele frequencies files button
         self.comp_button = QPushButton('Compute frequencies')
         self.comp_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.comp_button.setEnabled(False)
         self.comp_button.clicked.connect(self.compute_frequencies)
 
         # Stop computation button
         self.stop_button = QPushButton('Stop computation')
         self.stop_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.core.stop_computation)
 
         # Progress bar
@@ -137,6 +140,7 @@ class SelectPopsWidget(QWidget):
     def select_populations(self):
         self.core.append_pops(self.search_widget.selected_items())
         self.populate_selected_table(self.core.selected_pops)
+        self.selected_table.scrollToBottom()
 
     @Slot()
     def remove_populations(self):
@@ -158,9 +162,15 @@ class SelectPopsWidget(QWidget):
             table_widget_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             self.selected_table.setItem(index, 0, table_widget_item)
 
+        self.comp_button.setEnabled(len(pops) > 0)
+
     @Slot(str, str, int)
     def log_progress(self, key, message, line_num):
         self.log.set_entry(key, message, line_num)
+
+    @Slot(str)
+    def computation_finished(self, worker_name):
+        self.stop_button.setEnabled(False)
 
     @Slot()
     def compute_frequencies(self):
@@ -171,9 +181,12 @@ class SelectPopsWidget(QWidget):
 
         self.progress_bar.setMaximum(len(self.core.selected_pops))
 
+        self.stop_button.setEnabled(True)
+
         worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
         worker.signals.progress[str, str, int].connect(self.log_progress)
         worker.signals.progress[int].connect(self.progress_bar.setValue)
         worker.signals.result.connect(self.computation_result)
+        worker.signals.finished.connect(self.computation_finished)
 
         self.thread_pool.start(worker)

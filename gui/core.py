@@ -194,7 +194,8 @@ class Core(QObject):
         return True
 
     def append_pops(self, pops):
-        self.selected_pops += pops
+        new_pops = [pop for pop in pops if pop not in self.selected_pops]
+        self.selected_pops += new_pops
 
     def remove_pops(self, pops):
         self.selected_pops = [pop for pop in self.selected_pops if pop not in pops]

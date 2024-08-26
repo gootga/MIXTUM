@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QWidget, QLineEdit, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QLineEdit, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QVBoxLayout, QSizePolicy, QHeaderView
 
 
 
@@ -24,6 +24,7 @@ class SearchableTableWidget(QWidget):
         self.table_widget.verticalHeader().setVisible(False)
         self.table_widget.horizontalHeader().setVisible(False)
         self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         # Layout
         layout = QVBoxLayout(self)
