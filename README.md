@@ -27,9 +27,9 @@ First create a virtual environment under the `.venv` directory, where the requir
     python -m venv .venv
     source .venv/bin/activate
 
-The standalone script depends on `matplotlib`. The graphical user interface depends on `pyside6` and `matplotlib`. Please, install these libraries in the virtual environment with `pip` as follows.
+The standalone script depends on `numpy` and `matplotlib`. The graphical user interface depends on `pyside6`, `numpy` and `matplotlib`. Please, install these libraries in the virtual environment with `pip` as follows.
 
-    pip install pyside6 matplotlib
+    pip install pyside6 numpy matplotlib
 
 ## Usage instructions
 
