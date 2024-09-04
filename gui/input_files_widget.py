@@ -1,11 +1,9 @@
-from pathlib import Path
-
 from gui.log_system import LogSystem
 from gui.select_file_widget import SelectFileWidget
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool, QSize
-from PySide6.QtWidgets import QWidget, QPushButton, QLabel, QGridLayout
+from PySide6.QtWidgets import QWidget, QPushButton, QGridLayout
 
 
 

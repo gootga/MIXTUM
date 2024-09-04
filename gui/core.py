@@ -1,13 +1,39 @@
-import argparse
 from pathlib import Path
 from collections import defaultdict
 import numpy as np
 from time import time
 from multiprocessing import Process, Array, Event
 from math import ceil
-#import matplotlib.pyplot as plt
 
 from PySide6.QtCore import QObject, Signal, Slot
+
+
+
+event = Event()
+
+# Compute frequencies given list of alleles
+def allele_frequency(alleles):
+    freq = 0
+    num_alleles = 0
+
+    for a in alleles:
+        if a != 9:
+            freq += (2 - a) / 2
+            num_alleles += 1
+
+    if num_alleles == 0:
+        return -1
+
+    return freq / num_alleles
+
+# Compute frequencies of a population
+def population_allele_frequencies(file_path, pop_indices, allele_freqs):
+    with file_path.open(mode = 'r', encoding = 'utf-8') as file:
+        for index, row in enumerate(file):
+            allele_freqs[index] = allele_frequency([int(row[i]) for i in pop_indices])
+            if event.is_set():
+                break
+
 
 
 class Core(QObject):
@@ -44,8 +70,6 @@ class Core(QObject):
         self.num_alleles = 0
         self.num_valid_alleles = 0
         self.allele_frequencies = defaultdict(list)
-
-        self.event = Event()
 
         self.hybrid_pop = ''
         self.parent1_pop = ''
@@ -183,7 +207,6 @@ class Core(QObject):
         with self.pops_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for row in file:
                 columns = row.split()
-                pop = columns[0]
                 self.parsed_pops.append(columns[0])
 
                 num_pops += 1
@@ -210,38 +233,15 @@ class Core(QObject):
 
     @Slot()
     def stop_computation(self):
-        self.event.set()
+        event.set()
 
     @Slot(int)
     def set_num_procs(self, np):
         self.num_procs = np
 
-    # Compute frequencies given list of alleles
-    def allele_frequency(self, alleles):
-        freq = 0
-        num_alleles = 0
-
-        for a in alleles:
-            if a != 9:
-                freq += (2 - a) / 2
-                num_alleles += 1
-
-        if num_alleles == 0:
-            return -1
-
-        return freq / num_alleles
-
-    # Compute frequencies of a population
-    def population_allele_frequencies(self, pop_indices, allele_freqs):
-        with self.geno_file_path.open(mode = 'r', encoding = 'utf-8') as file:
-            for index, row in enumerate(file):
-                allele_freqs[index] = self.allele_frequency([int(row[i]) for i in pop_indices])
-                if self.event.is_set():
-                    break
-
     # Parallel compute frequencies of all populations
     def parallel_compute_populations_frequencies(self, progress_callback):
-        self.event = Event()
+        event.clear()
 
         pop_indices = [self.avail_pops_indices[pop] for pop in self.selected_pops]
 
@@ -263,7 +263,7 @@ class Core(QObject):
 
             for proc in range(self.num_procs):
                 if index < num_sel_pops:
-                    p = Process(target = self.population_allele_frequencies, args = (pop_indices[index], allele_freqs[index]))
+                    p = Process(target = population_allele_frequencies, args = (self.geno_file_path, pop_indices[index], allele_freqs[index]))
                     procs.append(p)
                     p.start()
                     computing_pops.append(self.selected_pops[index])
@@ -277,7 +277,7 @@ class Core(QObject):
             for p in procs:
                 p.join()
 
-            if self.event.is_set():
+            if event.is_set():
                 break
 
             t2 = time()
@@ -291,7 +291,7 @@ class Core(QObject):
             progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
             progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
 
-        if self.event.is_set():
+        if event.is_set():
             progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
             progress_callback[str, str, int].emit('progress', 'Allele frequencies unchanged from previous computation.', 0)
             progress_callback[str, str, int].emit('timing', '', 0)
@@ -465,7 +465,6 @@ class Core(QObject):
     # Computation of admixture angle post JL
     def admixture_angle_post_jl(self):
         num_aux_pops = len(self.aux_pops)
-        num_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
         xa = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop]
         xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]

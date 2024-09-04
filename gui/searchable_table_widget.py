@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QWidget, QLineEdit, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QVBoxLayout, QSizePolicy, QHeaderView
+from PySide6.QtWidgets import QWidget, QLineEdit, QTableWidget, QAbstractScrollArea, QTableWidgetItem, QVBoxLayout, QHeaderView
 
 
 

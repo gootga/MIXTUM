@@ -5,7 +5,7 @@ from gui.select_pops_widget import SelectPopsWidget
 from gui.mix_model_widget import MixModelWidget
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout, QSizePolicy
+from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout
 
 
 
