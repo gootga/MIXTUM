@@ -2,7 +2,7 @@
 
 ## Overview
 
-Mixtum has been developed as a standalone Python script and as a graphical user interface. Moreover, an experimental website version exists which can be visited [here](https://jmcastelo.github.io/mixtum/). Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on a Linux system are given below.
+Mixtum has been developed as a standalone Python script and as a graphical user interface. Moreover, an experimental [website](https://jmcastelo.github.io/mixtum/) version exists. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on a Linux system are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependences are included and don't need to be installed.
 
 ### Standalone script
 
@@ -14,7 +14,7 @@ To get help, please run the following command:
 
 ### Graphical user interface
 
-A GUI has been developed with Qt's `PySide6` library. Please run it with the following command:
+A GUI has been developed with Qt's `PySide6` library. Please, download it and run the executable, or get the source code and run it with the following command:
 
     python mixtum_gui.py
 
@@ -33,18 +33,40 @@ The standalone script depends on `numpy` and `matplotlib`. The graphical user in
 
 ## Usage instructions
 
-To do...
+### Standalone script
 
-## Development notes
+### Graphical user interface
+
+## Building the executable
+
+We make use of [pyinstaller](https://pyinstaller.org/en/stable/) to build self-contained standalone executables for several operating systems. Note that the executable for each operating system must be built under that particular operating system, no cross-compiling is possible with this tool.
+
+First install `pyinstaller` in the virtual environment that contains the dependencies of Mixtum.
+
+    pip install pyinstaller
+
+Then, if under Linux run it in the project's root directory as follows.
+
+    pyinstaller --onefile mixtum_gui.py
+
+Or if under Windows,
+
+    pyinstaller --onefile --windowed mixtum_gui.py
+
+to avoid providing a console window.
+
+If everything works fine, the executable can be found in the `dist` subdirectory.
+
+## Website development notes
 
 These notes are meant to be read by the developers of Mixtum.
 
-The experimental website version of the GUI can be set up for development as follows. If it does not exist, first create a virtual environment, activate it and install `panel`, `watchfiles` and `matplotlib`.
+The experimental website version of the GUI can be set up for development as follows. First install `panel` and `watchfiles`, in the virtual environment that contains the rest of the dependencies.
 
-    python -m venv .venv
-    source .venv/bin/activate
-    pip install panel watchfiles matplotlib
+    pip install panel watchfiles
     
+The website uses [Panel](https://panel.holoviz.org/) framework for the dashboard design. The code of the dashboard and that of the computation functions, is contained in a single Python script named `mixtum_panel.py`, without other additional scripts needed.
+
 To start delevopment run the following command which will open a web browser to watch the changes on the code as they are made.
 
     panel serve mixtum_panel.py --show --autoreload
