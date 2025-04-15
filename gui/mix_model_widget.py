@@ -265,10 +265,12 @@ class MixModelWidget(QWidget):
     @Slot(bool)
     def detach_plots(self, checked):
         if checked:
+            self.detach_button.setText('Attach plots')
             self.plots_panel.setParent(None)
             self.plots_panel.setWindowFlag(Qt.WindowCloseButtonHint, False)
             self.plots_panel.show()
         else:
+            self.detach_button.setText('Detach plots')
             self.splitter.addWidget(self.plots_panel)
 
     @Slot()

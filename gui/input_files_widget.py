@@ -3,7 +3,7 @@ from gui.select_file_widget import SelectFileWidget
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool, QSize
-from PySide6.QtWidgets import QWidget, QPushButton, QGridLayout
+from PySide6.QtWidgets import QWidget, QPushButton, QSizePolicy, QGroupBox, QVBoxLayout, QHBoxLayout
 
 
 
@@ -30,11 +30,17 @@ class InputFilesWidget(QWidget):
         self.log.append_entry('snp', '')
         self.log.append_entry('pops', '')
 
+        # Stylesheets
+        stylesheet_11 = 'color: white; background-color: rgb(128, 45, 0); font-size: 24pt;'
+        stylesheet_12 = 'color: white; background-color: rgb(128, 64, 0); font-size: 24pt;'
+        stylesheet_21 = 'color: white; background-color: rgb(0, 45, 128); font-size: 24pt;'
+        stylesheet_22 = 'color: white; background-color: rgb(0, 64, 128); font-size: 24pt;'
+
         # Select file widgets
-        self.geno_file_widget = SelectFileWidget('Select .geno file', '(*.geno)', 'Orange')
-        self.ind_file_widget = SelectFileWidget('Select .ind file', '(*.ind)', 'Orange')
-        self.snp_file_widget = SelectFileWidget('Select .snp file', '(*.snp)', 'Orange')
-        self.pops_file_widget = SelectFileWidget('Select populations file', None, 'Blue')
+        self.geno_file_widget = SelectFileWidget('Select .geno file', '(*.geno)', stylesheet_11)
+        self.ind_file_widget = SelectFileWidget('Select .ind file', '(*.ind)', stylesheet_11)
+        self.snp_file_widget = SelectFileWidget('Select .snp file', '(*.snp)', stylesheet_11)
+        self.pops_file_widget = SelectFileWidget('Select populations file', None, stylesheet_21)
 
         self.geno_file_widget.file_path_selected.connect(self.core.set_geno_file_path)
         self.ind_file_widget.file_path_selected.connect(self.core.set_ind_file_path)
@@ -42,9 +48,10 @@ class InputFilesWidget(QWidget):
         self.pops_file_widget.file_path_selected.connect(self.core.set_pops_file_path)
 
         # Check files button
-        self.check_button = QPushButton('Parse and check')
-        self.check_button.setMinimumSize(QSize(200, 200))
-        self.check_button.setStyleSheet('background-color: Orange')
+        self.check_button = QPushButton('Parse and check files')
+        self.check_button.setMinimumSize(QSize(500, 100))
+        self.check_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.check_button.setStyleSheet(stylesheet_12)
         self.check_button.setEnabled(False)
         self.core.input_file_paths_state.connect(self.check_button.setEnabled)
         self.check_button.clicked.connect(self.check_input_files)
@@ -56,20 +63,33 @@ class InputFilesWidget(QWidget):
 
         # Parse selected pops file button
         self.parse_pops_button = QPushButton('Load selected populations')
-        self.parse_pops_button.setMinimumSize(QSize(200, 200))
-        self.parse_pops_button.setStyleSheet('background-color: Blue')
+        self.parse_pops_button.setMinimumSize(QSize(500, 100))
+        self.parse_pops_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.parse_pops_button.setStyleSheet(stylesheet_22)
         self.parse_pops_button.setEnabled(False)
         self.core.pops_file_path_state.connect(self.parse_pops_button.setEnabled)
         self.parse_pops_button.clicked.connect(self.parse_pops_file)
 
+        # Required files buttons group box
+        req_group_box = QGroupBox('Required files')
+        req_layout = QVBoxLayout()
+        req_layout.addWidget(self.geno_file_widget, 0, Qt.AlignCenter)
+        req_layout.addWidget(self.ind_file_widget, 0, Qt.AlignCenter)
+        req_layout.addWidget(self.snp_file_widget, 0, Qt.AlignCenter)
+        req_layout.addWidget(self.check_button, 0, Qt.AlignCenter)
+        req_group_box.setLayout(req_layout)
+
+        # Optional files buttons group box
+        opt_group_box = QGroupBox('Optional files')
+        opt_layout = QVBoxLayout()
+        opt_layout.addWidget(self.pops_file_widget, 0, Qt.AlignCenter)
+        opt_layout.addWidget(self.parse_pops_button, 0, Qt.AlignCenter)
+        opt_group_box.setLayout(opt_layout)
+
         # Layout
-        layout = QGridLayout(self)
-        layout.addWidget(self.geno_file_widget, 0, 0, Qt.AlignCenter)
-        layout.addWidget(self.ind_file_widget, 0, 1, Qt.AlignCenter)
-        layout.addWidget(self.snp_file_widget, 0, 2, Qt.AlignCenter)
-        layout.addWidget(self.pops_file_widget, 0, 3, Qt.AlignCenter)
-        layout.addWidget(self.check_button, 1, 1, Qt.AlignCenter)
-        layout.addWidget(self.parse_pops_button, 1, 3, Qt.AlignCenter)
+        layout = QHBoxLayout(self)
+        layout.addWidget(req_group_box)
+        layout.addWidget(opt_group_box)
 
     @Slot(str, str)
     def log_file_path(self, key, file_path):
