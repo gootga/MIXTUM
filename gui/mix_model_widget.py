@@ -25,36 +25,36 @@ class MixModelWidget(QWidget):
         # Hybrid table widget
         self.hybrid_table = QTableWidget()
         self.hybrid_table.setColumnCount(1)
-        self.hybrid_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.hybrid_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.hybrid_table.verticalHeader().setVisible(False)
-        self.hybrid_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
-        self.hybrid_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.hybrid_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.hybrid_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.hybrid_table.setHorizontalHeaderLabels(['Hybrid'])
 
         # Parent 1 table widget
         self.parent1_table = QTableWidget()
         self.parent1_table.setColumnCount(1)
-        self.parent1_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.parent1_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent1_table.verticalHeader().setVisible(False)
-        self.parent1_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
-        self.parent1_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.parent1_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.parent1_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.parent1_table.setHorizontalHeaderLabels(['Parent 1'])
 
         # Parent 2 table widget
         self.parent2_table = QTableWidget()
         self.parent2_table.setColumnCount(1)
-        self.parent2_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.parent2_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent2_table.verticalHeader().setVisible(False)
-        self.parent2_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
-        self.parent2_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.parent2_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.parent2_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.parent2_table.setHorizontalHeaderLabels(['Parent 2'])
 
         # Auxiliaries table widget
         self.aux_table = QTableWidget()
         self.aux_table.setColumnCount(1)
         self.aux_table.verticalHeader().setVisible(False)
-        self.aux_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
-        self.aux_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.aux_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.aux_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.aux_table.setHorizontalHeaderLabels(['Auxiliaries'])
 
         # Connections
@@ -65,26 +65,26 @@ class MixModelWidget(QWidget):
 
         # Compute button
         self.compute_button = QPushButton('Compute results')
-        self.compute_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.compute_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.compute_button.setEnabled(False)
         self.compute_button.clicked.connect(self.compute_results)
 
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(9)
         self.progress_bar.setValue(0)
 
         # Save f4-points button
         self.save_f4_button = QPushButton('Save f4-points')
-        self.save_f4_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.save_f4_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.save_f4_button.setEnabled(False)
         self.save_f4_button.clicked.connect(self.save_f4_points)
 
         # Save results button
         self.save_results_button = QPushButton('Save admixture data')
-        self.save_results_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.save_results_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.save_results_button.setEnabled(False)
         self.save_results_button.clicked.connect(self.save_results)
 
@@ -95,7 +95,7 @@ class MixModelWidget(QWidget):
 
         # Detach / attach plots panel button
         self.detach_button = QPushButton('Detach plots')
-        self.detach_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.detach_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.detach_button.setCheckable(True)
         self.detach_button.clicked.connect(self.detach_plots)
 
@@ -108,11 +108,11 @@ class MixModelWidget(QWidget):
         # Plots panel layout
         playout = QVBoxLayout()
         playout.addWidget(self.tab_widget)
-        playout.addWidget(self.detach_button, 0, Qt.AlignCenter)
+        playout.addWidget(self.detach_button, 0, Qt.AlignmentFlag.AlignCenter)
 
         # Plots panel
         self.plots_panel = OpenWidget()
-        self.plots_panel.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding)
+        self.plots_panel.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Expanding)
         self.plots_panel.setLayout(playout)
 
         # Tables layout
@@ -128,7 +128,7 @@ class MixModelWidget(QWidget):
 
         # Splitter
         self.splitter = QSplitter()
-        self.splitter.setOrientation(Qt.Horizontal)
+        self.splitter.setOrientation(Qt.Orientation.Horizontal)
         self.splitter.addWidget(twidget)
         self.splitter.addWidget(self.plots_panel)
 
@@ -203,7 +203,7 @@ class MixModelWidget(QWidget):
 
         for index, pop in enumerate(self.core.selected_pops):
             item = QTableWidgetItem(pop)
-            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
             table.setItem(index, 0, item)
 
     @Slot()
@@ -267,7 +267,7 @@ class MixModelWidget(QWidget):
         if checked:
             self.detach_button.setText('Attach plots')
             self.plots_panel.setParent(None)
-            self.plots_panel.setWindowFlag(Qt.WindowCloseButtonHint, False)
+            self.plots_panel.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
             self.plots_panel.show()
         else:
             self.detach_button.setText('Detach plots')
@@ -276,7 +276,7 @@ class MixModelWidget(QWidget):
     @Slot()
     def save_f4_points(self):
         dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
 
         file_names = []
         if dialog.exec():
@@ -287,7 +287,7 @@ class MixModelWidget(QWidget):
     @Slot()
     def save_results(self):
         dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
 
         file_names = []
         if dialog.exec():

@@ -15,7 +15,7 @@ class SelectFileWidget(QWidget):
         # Select path button
         select_button = QPushButton(button_label)
         select_button.setMinimumSize(QSize(500, 100))
-        select_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        select_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         select_button.setStyleSheet(stylesheet)
         select_button.clicked.connect(self.select_file_path)
 
@@ -27,7 +27,7 @@ class SelectFileWidget(QWidget):
     def select_file_path(self):
         # File dialog to select file path
         dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.ExistingFile)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if self.name_filter is not None:
             dialog.setNameFilter(self.name_filter)
 

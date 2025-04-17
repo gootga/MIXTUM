@@ -33,27 +33,27 @@ class SelectPopsWidget(QWidget):
         self.selected_table.setColumnCount(1)
         self.selected_table.verticalHeader().setVisible(False)
         self.selected_table.horizontalHeader().setVisible(False)
-        self.selected_table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
-        self.selected_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.selected_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.selected_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         # Select populations button
         self.select_button = QPushButton('Select populations')
-        self.select_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.select_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.select_button.clicked.connect(self.select_populations)
 
         # Remove populations button
         self.remove_button = QPushButton('Deselect populations')
-        self.remove_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.remove_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.remove_button.clicked.connect(self.remove_populations)
 
         # Reset populations button
         self.reset_button = QPushButton('Reset populations')
-        self.reset_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.reset_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.reset_button.clicked.connect(self.reset_populations)
 
         # Number of computing processes
         self.num_procs_spin_box = QSpinBox()
-        self.num_procs_spin_box.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.num_procs_spin_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.num_procs_spin_box.setMinimum(1)
         self.num_procs_spin_box.setMaximum(9999)
         self.num_procs_spin_box.valueChanged.connect(self.core.set_num_procs)
@@ -61,38 +61,38 @@ class SelectPopsWidget(QWidget):
 
         # Compute allele frequencies files button
         self.comp_button = QPushButton('Compute frequencies')
-        self.comp_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.comp_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.comp_button.setEnabled(False)
         self.comp_button.clicked.connect(self.compute_frequencies)
 
         # Stop computation button
         self.stop_button = QPushButton('Stop computation')
-        self.stop_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.stop_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.core.stop_computation)
 
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(1)
         self.progress_bar.setValue(0)
 
         # Save frequencies button
         self.save_freqs_button = QPushButton('Save frequencies')
-        self.save_freqs_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.save_freqs_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.save_freqs_button.setEnabled(False)
         self.save_freqs_button.clicked.connect(self.save_frequencies)
 
         # Separator
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
 
         # Select table buttons layout
         hlayout = QHBoxLayout()
-        hlayout.addWidget(self.remove_button, 0, Qt.AlignJustify)
-        hlayout.addWidget(self.reset_button, 0, Qt.AlignJustify)
+        hlayout.addWidget(self.remove_button, 0, Qt.AlignmentFlag.AlignJustify)
+        hlayout.addWidget(self.reset_button, 0, Qt.AlignmentFlag.AlignJustify)
 
         # Select table layout
         vlayout = QVBoxLayout()
@@ -106,7 +106,7 @@ class SelectPopsWidget(QWidget):
         # Search table layout
         slayout = QVBoxLayout()
         slayout.addWidget(self.search_widget)
-        slayout.addWidget(self.select_button, 0, Qt.AlignHCenter)
+        slayout.addWidget(self.select_button, 0, Qt.AlignmentFlag.AlignHCenter)
 
         # Search group box
         search_group = QGroupBox('Search and select from available populations')
@@ -166,7 +166,7 @@ class SelectPopsWidget(QWidget):
 
         for index, item in enumerate(pops):
             table_widget_item = QTableWidgetItem(item)
-            table_widget_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+            table_widget_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
             self.selected_table.setItem(index, 0, table_widget_item)
 
         self.comp_button.setEnabled(len(pops) > 0)
@@ -202,9 +202,9 @@ class SelectPopsWidget(QWidget):
     @Slot()
     def save_frequencies(self):
         dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
 
-        file_names = []
+        # file_names = []
         if dialog.exec():
             file_names = dialog.selectedFiles()
             file_path = file_names[0]

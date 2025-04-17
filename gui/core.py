@@ -1,5 +1,4 @@
 from pathlib import Path
-from collections import defaultdict
 import numpy as np
 from time import time
 from multiprocessing import Process, Array, Event
@@ -61,7 +60,7 @@ class Core(QObject):
         self.num_snp_rows = 0
 
         self.avail_pops = []
-        self.avail_pops_indices = defaultdict(list)
+        self.avail_pops_indices = {}
         self.snp_names = []
         self.parsed_pops = []
         self.selected_pops = []
@@ -69,7 +68,7 @@ class Core(QObject):
         self.num_procs = 1
         self.num_alleles = 0
         self.num_valid_alleles = 0
-        self.allele_frequencies = defaultdict(list)
+        self.allele_frequencies = {}
 
         self.hybrid_pop = ''
         self.parent1_pop = ''
@@ -146,7 +145,7 @@ class Core(QObject):
 
     # Parse .ind file containing population indices, and count number of rows
     def parse_ind_file(self, progress_callback):
-        self.avail_pops_indices = defaultdict(list)
+        self.avail_pops_indices = {}
         self.num_ind_rows = 0
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
@@ -155,7 +154,11 @@ class Core(QObject):
 
                 columns = row.split()
                 pop_name = columns[-1]
-                self.avail_pops_indices[pop_name].append(index)
+
+                if pop_name in self.avail_pops_indices:
+                    self.avail_pops_indices[pop_name].append(index)
+                else:
+                    self.avail_pops_indices[pop_name] = [index]
 
                 self.num_ind_rows += 1
 
@@ -310,7 +313,7 @@ class Core(QObject):
         progress_callback[str, str, int].emit('check', 'Checking SNPs finished.', 0)
         progress_callback[str, str, int].emit('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
 
-        self.allele_frequencies = defaultdict(list)
+        self.allele_frequencies = {}
         for index, pop in enumerate(self.selected_pops):
             self.allele_frequencies[pop] = np.array(allele_freqs[index])
 

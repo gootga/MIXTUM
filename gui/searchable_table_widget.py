@@ -23,8 +23,8 @@ class SearchableTableWidget(QWidget):
         self.table_widget.setColumnCount(1)
         self.table_widget.verticalHeader().setVisible(False)
         self.table_widget.horizontalHeader().setVisible(False)
-        self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
-        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         # Layout
         layout = QVBoxLayout(self)
@@ -42,7 +42,7 @@ class SearchableTableWidget(QWidget):
 
         for index, item in enumerate(table):
             table_widget_item = QTableWidgetItem(item)
-            table_widget_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+            table_widget_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
             self.table_widget.setItem(index, 0, table_widget_item)
 
         self.table_widget.resizeColumnsToContents()

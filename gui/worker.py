@@ -5,7 +5,7 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 
 class WorkerSignals(QObject):
-    '''
+    """
     Defines the signals available from a running worker thread.
 
     Supported signals are:
@@ -21,8 +21,8 @@ class WorkerSignals(QObject):
 
     progress
         int indicating % progress
+    """
 
-    '''
     finished = Signal(str)
     error = Signal(tuple)
     result = Signal(bool)
@@ -31,7 +31,7 @@ class WorkerSignals(QObject):
 
 
 class Worker(QRunnable):
-    '''
+    """
     Worker thread
 
     Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
@@ -41,8 +41,7 @@ class Worker(QRunnable):
     :type callback: function
     :param args: Arguments to pass to the callback function
     :param kwargs: Keywords to pass to the callback function
-
-    '''
+    """
 
     def __init__(self, name, fn, *args, **kwargs):
         super(Worker, self).__init__()
@@ -59,9 +58,9 @@ class Worker(QRunnable):
 
     @Slot()
     def run(self):
-        '''
+        """
         Initialise the runner function with passed args, kwargs.
-        '''
+        """
 
         # Retrieve args/kwargs here; and fire processing using them
         try:

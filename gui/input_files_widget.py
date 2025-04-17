@@ -50,7 +50,7 @@ class InputFilesWidget(QWidget):
         # Check files button
         self.check_button = QPushButton('Parse and check files')
         self.check_button.setMinimumSize(QSize(500, 100))
-        self.check_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.check_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.check_button.setStyleSheet(stylesheet_12)
         self.check_button.setEnabled(False)
         self.core.input_file_paths_state.connect(self.check_button.setEnabled)
@@ -64,7 +64,7 @@ class InputFilesWidget(QWidget):
         # Parse selected pops file button
         self.parse_pops_button = QPushButton('Load selected populations')
         self.parse_pops_button.setMinimumSize(QSize(500, 100))
-        self.parse_pops_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.parse_pops_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.parse_pops_button.setStyleSheet(stylesheet_22)
         self.parse_pops_button.setEnabled(False)
         self.core.pops_file_path_state.connect(self.parse_pops_button.setEnabled)
@@ -72,18 +72,20 @@ class InputFilesWidget(QWidget):
 
         # Required files buttons group box
         req_group_box = QGroupBox('Required files')
+        req_group_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         req_layout = QVBoxLayout()
-        req_layout.addWidget(self.geno_file_widget, 0, Qt.AlignCenter)
-        req_layout.addWidget(self.ind_file_widget, 0, Qt.AlignCenter)
-        req_layout.addWidget(self.snp_file_widget, 0, Qt.AlignCenter)
-        req_layout.addWidget(self.check_button, 0, Qt.AlignCenter)
+        req_layout.addWidget(self.geno_file_widget, 0, Qt.AlignmentFlag.AlignCenter)
+        req_layout.addWidget(self.ind_file_widget, 0, Qt.AlignmentFlag.AlignCenter)
+        req_layout.addWidget(self.snp_file_widget, 0, Qt.AlignmentFlag.AlignCenter)
+        req_layout.addWidget(self.check_button, 0, Qt.AlignmentFlag.AlignCenter)
         req_group_box.setLayout(req_layout)
 
         # Optional files buttons group box
         opt_group_box = QGroupBox('Optional files')
+        opt_group_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         opt_layout = QVBoxLayout()
-        opt_layout.addWidget(self.pops_file_widget, 0, Qt.AlignCenter)
-        opt_layout.addWidget(self.parse_pops_button, 0, Qt.AlignCenter)
+        opt_layout.addWidget(self.pops_file_widget, 0, Qt.AlignmentFlag.AlignCenter)
+        opt_layout.addWidget(self.parse_pops_button, 0, Qt.AlignmentFlag.AlignCenter)
         opt_group_box.setLayout(opt_layout)
 
         # Layout

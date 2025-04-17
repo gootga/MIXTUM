@@ -45,7 +45,7 @@ class MainWindow(QWidget):
 
         # Splitter
         splitter = QSplitter()
-        splitter.setOrientation(Qt.Vertical)
+        splitter.setOrientation(Qt.Orientation.Vertical)
         splitter.addWidget(self.tab)
         splitter.addWidget(self.log_widget)
 
