@@ -11,7 +11,7 @@ class SearchableTableWidget(QWidget):
         self.table = []
 
         # Table containing search results
-        self.results_table = []
+        #self.results_table = []
 
         # Search input edit
         self.search_edit = QLineEdit()
@@ -20,11 +20,12 @@ class SearchableTableWidget(QWidget):
 
         # Table widget
         self.table_widget = QTableWidget()
+        self.table_widget.setSortingEnabled(True)
         self.table_widget.setColumnCount(1)
         self.table_widget.verticalHeader().setVisible(False)
-        self.table_widget.horizontalHeader().setVisible(False)
-        self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.table_widget.horizontalHeader().setVisible(True)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table_widget.setHorizontalHeaderLabels(['Available populations'])
 
         # Layout
         layout = QVBoxLayout(self)
@@ -45,15 +46,15 @@ class SearchableTableWidget(QWidget):
             table_widget_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
             self.table_widget.setItem(index, 0, table_widget_item)
 
-        self.table_widget.resizeColumnsToContents()
+        # self.table_widget.resizeColumnsToContents()
 
     @Slot(str)
     def search_table(self, text):
         if len(text) > 1:
-            self.results_table = [item for item in self.table if text.lower() in item.lower()]
+            results_table = [item for item in self.table if text.lower() in item.lower()]
+            self.populate_table_widget(results_table)
         else:
-            self.results_table = [item for item in self.table]
-        self.populate_table_widget(self.results_table)
+            self.populate_table_widget(self.table)
 
     def selected_items(self):
         return [item.text() for item in self.table_widget.selectedItems()]

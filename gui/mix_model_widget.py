@@ -25,35 +25,35 @@ class MixModelWidget(QWidget):
         # Hybrid table widget
         self.hybrid_table = QTableWidget()
         self.hybrid_table.setColumnCount(1)
+        self.hybrid_table.setSortingEnabled(True)
         self.hybrid_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.hybrid_table.verticalHeader().setVisible(False)
-        self.hybrid_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.hybrid_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.hybrid_table.setHorizontalHeaderLabels(['Hybrid'])
 
         # Parent 1 table widget
         self.parent1_table = QTableWidget()
         self.parent1_table.setColumnCount(1)
+        self.parent1_table.setSortingEnabled(True)
         self.parent1_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent1_table.verticalHeader().setVisible(False)
-        self.parent1_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.parent1_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.parent1_table.setHorizontalHeaderLabels(['Parent 1'])
 
         # Parent 2 table widget
         self.parent2_table = QTableWidget()
         self.parent2_table.setColumnCount(1)
+        self.parent2_table.setSortingEnabled(True)
         self.parent2_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent2_table.verticalHeader().setVisible(False)
-        self.parent2_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.parent2_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.parent2_table.setHorizontalHeaderLabels(['Parent 2'])
 
         # Auxiliaries table widget
         self.aux_table = QTableWidget()
         self.aux_table.setColumnCount(1)
+        self.aux_table.setSortingEnabled(True)
         self.aux_table.verticalHeader().setVisible(False)
-        self.aux_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self.aux_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.aux_table.setHorizontalHeaderLabels(['Auxiliaries'])
 

@@ -30,11 +30,12 @@ class SelectPopsWidget(QWidget):
 
         # Table containing selected populations
         self.selected_table = QTableWidget()
+        self.selected_table.setSortingEnabled(True)
         self.selected_table.setColumnCount(1)
         self.selected_table.verticalHeader().setVisible(False)
-        self.selected_table.horizontalHeader().setVisible(False)
-        self.selected_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.selected_table.horizontalHeader().setVisible(True)
         self.selected_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.selected_table.setHorizontalHeaderLabels(['Selected populations'])
 
         # Select populations button
         self.select_button = QPushButton('Select populations')
