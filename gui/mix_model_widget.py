@@ -4,7 +4,7 @@ from gui.plots import Plot
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QAbstractScrollArea, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
+from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
 
 
 
@@ -92,6 +92,7 @@ class MixModelWidget(QWidget):
         self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100)
         self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100)
         self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
+        self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
 
         # Detach / attach plots panel button
         self.detach_button = QPushButton('Detach plots')
@@ -105,9 +106,24 @@ class MixModelWidget(QWidget):
         self.tab_widget.addTab(self.plot_std, 'Standard admixture')
         self.tab_widget.addTab(self.plot_histogram, 'f4 ratio histogram')
 
+        # Alpha out of range label
+        alpha_label = QLabel('Proportions out of range')
+        alpha_label.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        alpha_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        alpha_label.setStyleSheet('color: white; background-color: magenta; font-size: 24pt;')
+
+        # Admixture proportions group box
+        plot_bars_groupbox = QGroupBox('Admixture proportions')
+        plot_bars_groupbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        self.pbglayout = QStackedLayout(plot_bars_groupbox)
+        self.pbglayout.addWidget(self.plot_bars)
+        self.pbglayout.addWidget(alpha_label)
+        self.pbglayout.setCurrentIndex(0)
+
         # Plots panel layout
         playout = QVBoxLayout()
         playout.addWidget(self.tab_widget)
+        playout.addWidget(plot_bars_groupbox)
         playout.addWidget(self.detach_button, 0, Qt.AlignmentFlag.AlignCenter)
 
         # Plots panel
@@ -250,6 +266,12 @@ class MixModelWidget(QWidget):
         self.plot_prime.plot_fit(self.core.f4ab_prime, self.core.f4xb_prime, self.core.alpha, f'Renormalized admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4'({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4'({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_histogram.plot_histogram(self.core.alpha_ratio_hist, f'{self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', 'f4 ratio', 'Counts')
+
+        if 0 <= self.core.alpha <= 1:
+            self.plot_bars.plot_bars(self.core.hybrid_pop, self.core.parent1_pop, self.core.parent2_pop, self.core.alpha)
+            self.pbglayout.setCurrentIndex(0)
+        else:
+            self.pbglayout.setCurrentIndex(1)
 
         self.save_f4_button.setEnabled(True)
         self.save_results_button.setEnabled(True)
