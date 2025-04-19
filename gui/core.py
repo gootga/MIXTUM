@@ -95,6 +95,7 @@ class Core(QObject):
         self.alpha_ratio_avg = 0
         self.alpha_ratio_std_dev = 0
         self.alpha_ratio_hist = None
+        self.alpha_ratio_hist_bins = 20
         self.num_cases = 0
 
     def check_file_paths(self):
@@ -513,8 +514,13 @@ class Core(QObject):
         alpha_01 = self.alpha_ratio[(self.alpha_ratio >= 0) & (self.alpha_ratio <= 1)]
         self.alpha_ratio_avg = np.average(alpha_01)
         self.alpha_ratio_std_dev = np.std(alpha_01) * 1.96
-        self.alpha_ratio_hist = np.histogram(self.alpha_ratio, 20)
+        self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
         self.num_cases = alpha_01.size
+
+    # Computation of f4-ratio histogram
+    def compute_f4_ratio_histogram(self, bins):
+        self.alpha_ratio_hist_bins = bins
+        self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
 
     # Compute all results
     def compute_results(self, progress_callback):

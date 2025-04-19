@@ -4,7 +4,7 @@ from gui.plots import Plot
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
+from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QSpinBox, QFormLayout, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
 
 
 
@@ -95,6 +95,22 @@ class MixModelWidget(QWidget):
         self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
         self.plot_angle = Plot('Angles', '', '', 4, 4, 100, show_toolbar = False, polar = True)
 
+        # f4 ratio histogram bins spinbox
+        self.bins_spinbox = QSpinBox(minimum = 1, maximum = 1000, value = self.core.alpha_ratio_hist_bins)
+        self.bins_spinbox.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.bins_spinbox.setEnabled(False)
+        self.bins_spinbox.valueChanged.connect(self.compute_histogram)
+
+        # Bins form layout
+        bins_form_layout = QFormLayout()
+        bins_form_layout.addRow('#Bins:', self.bins_spinbox)
+
+        # f4 ratio histogram widget
+        f4_ratio_histogram_widget = QWidget()
+        f4_ratio_histogram_layout = QVBoxLayout(f4_ratio_histogram_widget)
+        f4_ratio_histogram_layout.addWidget(self.plot_histogram)
+        f4_ratio_histogram_layout.addLayout(bins_form_layout)
+
         # Angles widget
         angles_widget = QWidget()
         angles_layout = QVBoxLayout(angles_widget)
@@ -110,7 +126,7 @@ class MixModelWidget(QWidget):
         self.tab_widget = QTabWidget()
         self.tab_widget.addTab(self.plot_prime, 'Renormalized admixture')
         self.tab_widget.addTab(self.plot_std, 'Standard admixture')
-        self.tab_widget.addTab(self.plot_histogram, 'f4 ratio histogram')
+        self.tab_widget.addTab(f4_ratio_histogram_widget, 'f4 ratio histogram')
         self.tab_widget.addTab(angles_widget, 'Angles')
 
         # Alpha out of range label
@@ -283,6 +299,7 @@ class MixModelWidget(QWidget):
 
         self.save_f4_button.setEnabled(True)
         self.save_results_button.setEnabled(True)
+        self.bins_spinbox.setEnabled(True)
 
     @Slot()
     def compute_results(self):
@@ -291,6 +308,11 @@ class MixModelWidget(QWidget):
         worker.signals.finished.connect(self.computation_finished)
 
         self.thread_pool.start(worker)
+
+    @Slot(int)
+    def compute_histogram(self, bins):
+        self.core.compute_f4_ratio_histogram(bins)
+        self.plot_histogram.plot_histogram(self.core.alpha_ratio_hist, f'{self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', 'f4 ratio', 'Counts')
 
     @Slot(bool)
     def detach_plots(self, checked):
