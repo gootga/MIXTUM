@@ -15,17 +15,22 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
 
 
 class Plot(QWidget):
-    def __init__(self, title, xlabel, ylabel, width, height, dpi, show_axes = True, show_toolbar = True):
+    def __init__(self, title, xlabel, ylabel, width, height, dpi, show_axes = True, show_toolbar = True, polar = False):
         QWidget.__init__(self)
 
         self.canvas = MatplotlibCanvas(self, width, height, dpi)
 
-        self.axes = self.canvas.fig.add_subplot()
+        self.axes = self.canvas.fig.add_subplot(polar = polar)
         
         self.axes.set_title(title)
 
-        self.axes.set_xlabel(xlabel)
-        self.axes.set_ylabel(ylabel)
+        if polar:
+            self.axes.set_thetamin(0)
+            self.axes.set_thetamax(180)
+            self.axes.set_rticks([])
+        else:
+            self.axes.set_xlabel(xlabel)
+            self.axes.set_ylabel(ylabel)
 
         if not show_axes:
             self.axes.axis('off')
@@ -88,5 +93,24 @@ class Plot(QWidget):
 
         self.canvas.fig.legends = []
         self.canvas.fig.legend(loc = 'outside lower center', bbox_to_anchor = (0.5, -0.02), ncols = 2, fontsize = 'small')
+
+        self.canvas.fig.canvas.draw()
+
+    def plot_angle(self, title, angles):
+        self.axes.clear()
+
+        self.axes.set_title(title)
+
+        self.axes.set_thetamin(0)
+        self.axes.set_thetamax(180)
+
+        self.axes.set_rmax(1)
+        self.axes.set_rticks([])
+
+        self.axes.vlines(angles[0] * np.pi / 180, 0, 1, colors = 'C0', label = f"Pre-JL angle: {angles[0]:.2f} deg")
+        self.axes.vlines(angles[1] * np.pi / 180, 0, 1, colors = 'C1', label = f"Post-JL angle: {angles[1]:.2f} deg")
+
+        self.canvas.fig.legends = []
+        self.canvas.fig.legend(loc = 'outside lower center', ncols = 1, fontsize = 'medium')
 
         self.canvas.fig.canvas.draw()

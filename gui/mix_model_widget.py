@@ -93,6 +93,12 @@ class MixModelWidget(QWidget):
         self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100)
         self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
         self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
+        self.plot_angle = Plot('Angles', '', '', 4, 4, 100, show_toolbar = False, polar = True)
+
+        # Angles widget
+        angles_widget = QWidget()
+        angles_layout = QVBoxLayout(angles_widget)
+        angles_layout.addWidget(self.plot_angle)
 
         # Detach / attach plots panel button
         self.detach_button = QPushButton('Detach plots')
@@ -105,6 +111,7 @@ class MixModelWidget(QWidget):
         self.tab_widget.addTab(self.plot_prime, 'Renormalized admixture')
         self.tab_widget.addTab(self.plot_std, 'Standard admixture')
         self.tab_widget.addTab(self.plot_histogram, 'f4 ratio histogram')
+        self.tab_widget.addTab(angles_widget, 'Angles')
 
         # Alpha out of range label
         alpha_label = QLabel('Proportions out of range')
@@ -266,6 +273,7 @@ class MixModelWidget(QWidget):
         self.plot_prime.plot_fit(self.core.f4ab_prime, self.core.f4xb_prime, self.core.alpha, f'Renormalized admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4'({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4'({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_histogram.plot_histogram(self.core.alpha_ratio_hist, f'{self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', 'f4 ratio', 'Counts')
+        self.plot_angle.plot_angle('Angles', [self.core.angle_pre_jl, self.core.angle_post_jl])
 
         if 0 <= self.core.alpha <= 1:
             self.plot_bars.plot_bars(self.core.hybrid_pop, self.core.parent1_pop, self.core.parent2_pop, self.core.alpha)
