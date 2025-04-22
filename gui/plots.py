@@ -27,7 +27,11 @@ class Plot(QWidget):
         if polar:
             self.axes.set_thetamin(0)
             self.axes.set_thetamax(180)
+
             self.axes.set_rticks([])
+
+            self.axes.bar(0, 1, np.pi / 2, color=(1, 0.8, 0.4), alpha=0.5, align='edge')
+            self.axes.bar(np.pi / 2, 1, np.pi / 2, color=(0.8, 1, 0.4), alpha=0.5, align='edge')
         else:
             self.axes.set_xlabel(xlabel)
             self.axes.set_ylabel(ylabel)
@@ -52,6 +56,11 @@ class Plot(QWidget):
 
         self.axes.set_xlabel(xlabel)
         self.axes.set_ylabel(ylabel)
+
+        self.axes.axhline(y = 0, color = '0.6', lw = 0.5)
+        self.axes.axvline(x = 0, color = '0.6', lw = 0.5)
+
+        self.axes.axline((0, 0), slope = 1, color = '0.6', lw = 0.5)
 
         self.axes.plot(x, y, '.')
         self.axes.plot(x, alpha * x)
@@ -106,6 +115,9 @@ class Plot(QWidget):
 
         self.axes.set_rmax(1)
         self.axes.set_rticks([])
+
+        self.axes.bar(0, 1, np.pi / 2, color=(1, 0.8, 0.4), alpha=0.5, align='edge')
+        self.axes.bar(np.pi / 2, 1, np.pi / 2, color=(0.8, 1, 0.4), alpha=0.5, align='edge')
 
         self.axes.vlines(angles[0] * np.pi / 180, 0, 1, colors = 'C0', label = f"Pre-JL angle: {angles[0]:.2f} deg")
         self.axes.vlines(angles[1] * np.pi / 180, 0, 1, colors = 'C1', label = f"Post-JL angle: {angles[1]:.2f} deg")

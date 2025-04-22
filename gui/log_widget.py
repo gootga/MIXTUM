@@ -10,7 +10,7 @@ class LogWidget(QWidget):
         # Log text edit
         self.log_text_edit = QTextEdit()
         self.log_text_edit.setReadOnly(True)
-        self.log_text_edit.setFontFamily('Courier')
+        self.log_text_edit.setFontFamily('Monospace')
 
         # Layout
         layout = QVBoxLayout(self)
