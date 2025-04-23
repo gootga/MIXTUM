@@ -204,8 +204,8 @@ class SelectPopsWidget(QWidget):
     def save_frequencies(self):
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.AnyFile)
+        dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
 
-        # file_names = []
         if dialog.exec():
             file_names = dialog.selectedFiles()
             file_path = file_names[0]
