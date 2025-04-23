@@ -2,7 +2,7 @@
 
 ## Overview
 
-Mixtum has been developed as a standalone Python script and as a graphical user interface. Moreover, an experimental [website](https://jmcastelo.github.io/mixtum/) version exists. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on a Linux system are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependences are included and don't need to be installed.
+Mixtum has been developed as a standalone Python script and as a graphical user interface. Moreover, an experimental [website](https://jmcastelo.github.io/mixtum/) version exists. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependencies are included in the executable and don't need to be installed.
 
 ### Standalone script
 
@@ -20,12 +20,29 @@ A GUI has been developed with Qt's `PySide6` library. Please, download it and ru
 
 ## Dependencies
 
-We give instructions to install the dependencies for a Linux system using a virtual environment and `pip`.
+We give instructions to install the dependencies for Linux and Windows systems using a virtual environment and `pip`. We assume that Python 3 is available on your system.
 
-First create a virtual environment under the `.venv` directory, where the required libraries will be installed, and activate it.
+First create a virtual environment under the `.venv` directory within Mixtum's location, where the required libraries will be installed, and activate it. Note that you can create the virtual environment on any location of your filesystem, and name it as you wish.
+
+On Linux and Windows, open a terminal and enter Mixtum's directory. Then create the virtual environment:
 
     python -m venv .venv
+
+Afterwards, you should activate it. On Linux, this is done as follows:
+
     source .venv/bin/activate
+
+On Windows, the activation script to be run depends on the employed shell. If using Command Prompt:
+
+    .venv\Scripts\activate.bat
+
+Whereas PowerShell requires running the following script:
+
+    .venv\Scripts\Activate.ps1
+
+In case the execution policiy of PowerShell does not allow the execution of scripts, you can enable it with the following command on a PowerShell run as administrator:
+
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
 The standalone script depends on `numpy` and `matplotlib`. The graphical user interface depends on `pyside6`, `numpy` and `matplotlib`. Please, install these libraries in the virtual environment with `pip` as follows.
 
