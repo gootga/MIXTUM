@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QWidget, QPushButton, QSizePolicy, QGroupBox, QVBo
 
 class InputFilesWidget(QWidget):
     ind_file_parsed = Signal()
-    pops_file_parsed = Signal()
+    parsed_pops_changed = Signal()
 
     def __init__(self, core):
         QWidget.__init__(self)
@@ -70,6 +70,9 @@ class InputFilesWidget(QWidget):
         self.core.pops_file_path_state.connect(self.parse_pops_button.setEnabled)
         self.parse_pops_button.clicked.connect(self.parse_pops_file)
 
+        # Parse error
+        self.core.parsed_pops_error.connect(self.pops_check_failed)
+
         # Required files buttons group box
         req_group_box = QGroupBox('Required files')
         req_group_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
@@ -109,6 +112,8 @@ class InputFilesWidget(QWidget):
             if self.core.check_input_files():
                 self.log.set_entry('main', 'Checking finished.')
                 self.log.append_entry('check', 'Parsed input files seem to have a valid structure.')
+
+                self.core.check_parsed_pops()
 
         if worker_name == 'ind':
             self.ind_file_parsed.emit()
@@ -153,8 +158,14 @@ class InputFilesWidget(QWidget):
 
     @Slot(str)
     def parsing_finished(self, worker_name):
+        self.core.check_parsed_pops()
         self.log.set_entry('main', 'Parsing finished.')
-        self.pops_file_parsed.emit()
+        self.parsed_pops_changed.emit()
+
+    @Slot(list)
+    def pops_check_failed(self, missing_pops):
+        self.log.set_entry('pops', f'Error: The following populations are missing from .ind file and were unselected: {','.join(missing_pops)}')
+        self.parsed_pops_changed.emit()
 
     @Slot()
     def parse_pops_file(self):

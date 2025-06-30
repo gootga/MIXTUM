@@ -31,7 +31,7 @@ class MainWindow(QWidget):
 
         # Connections
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
-        self.input_files_widget.pops_file_parsed.connect(self.sel_pops_widget.init_selected_table)
+        self.input_files_widget.parsed_pops_changed.connect(self.sel_pops_widget.init_selected_table)
         self.sel_pops_widget.computation_result.connect(self.mix_model_widget.init_pop_tables)
 
         # Tab widget

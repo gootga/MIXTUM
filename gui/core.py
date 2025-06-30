@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 from time import time
 from multiprocessing import Process, Array, Event
-from math import ceil
+from math import ceil, isclose
 
 from PySide6.QtCore import QObject, Signal, Slot
 
@@ -45,6 +45,8 @@ class Core(QObject):
     geno_file_error = Signal()
     ind_file_error = Signal(int, int)
     snp_file_error = Signal(int, int)
+
+    parsed_pops_error = Signal(list)
 
     def __init__(self):
         QObject.__init__(self)
@@ -216,9 +218,14 @@ class Core(QObject):
                 num_pops += 1
                 progress_callback[str, str].emit('pops', f'Number of pops: {num_pops}')
 
-        self.append_pops(self.parsed_pops)
-
         return True
+
+    def check_parsed_pops(self):
+        if len(self.parsed_pops) > 0 and len(self.avail_pops) > 0:
+            missing_pops = [pop for pop in self.parsed_pops if pop not in self.avail_pops]
+            self.parsed_pops = [pop for pop in self.parsed_pops if pop in self.avail_pops]
+            if len(missing_pops) > 0:
+                self.parsed_pops_error.emit(missing_pops)
 
     def append_pops(self, pops):
         new_pops = [pop for pop in pops if pop not in self.selected_pops]
@@ -508,7 +515,8 @@ class Core(QObject):
         for i in range(num_aux_pops):
             for j in range(i + 1, num_aux_pops):
                 ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
-                self.alpha_ratio[index] = np.dot(xb, ij) / np.dot(ab, ij)
+                if not isclose(np.dot(ab, ij), 0):
+                    self.alpha_ratio[index] = np.dot(xb, ij) / np.dot(ab, ij)
                 index += 1
 
         alpha_01 = self.alpha_ratio[(self.alpha_ratio >= 0) & (self.alpha_ratio <= 1)]
