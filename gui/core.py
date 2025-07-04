@@ -12,18 +12,18 @@ event = Event()
 
 # Compute frequencies given list of alleles
 def allele_frequency(alleles):
-    freq = 0
-    num_alleles = 0
+    freq = np.double(0)
+    num_alleles = np.uint(0)
 
     for a in alleles:
         if a != 9:
-            freq += (2 - a) / 2
+            freq += np.double((2 - a) / 2)
             num_alleles += 1
 
     if num_alleles == 0:
         return -1
 
-    return freq / num_alleles
+    return np.double(freq / num_alleles)
 
 # Compute frequencies of a population
 def population_allele_frequencies(file_path, pop_indices, allele_freqs):
@@ -224,8 +224,10 @@ class Core(QObject):
         if len(self.parsed_pops) > 0 and len(self.avail_pops) > 0:
             missing_pops = [pop for pop in self.parsed_pops if pop not in self.avail_pops]
             self.parsed_pops = [pop for pop in self.parsed_pops if pop in self.avail_pops]
+            self.reset_pops()
             if len(missing_pops) > 0:
                 self.parsed_pops_error.emit(missing_pops)
+
 
     def append_pops(self, pops):
         new_pops = [pop for pop in pops if pop not in self.selected_pops]
@@ -312,18 +314,19 @@ class Core(QObject):
         progress_callback[str, str, int].emit('progress', '', 0)
         progress_callback[str, str, int].emit('check', 'Checking and removing invalid SNPs...', 0)
 
-        invalid_indices = np.unique(np.array([index for freqs in allele_freqs for index, freq in enumerate(freqs) if freq == -1], dtype = int))
+        invalid_indices = np.unique(np.array([index for freqs in allele_freqs for index, freq in enumerate(freqs.get_obj()) if freq == -1], dtype = int))
         self.num_valid_alleles = self.num_alleles - invalid_indices.size
 
+        valid_allele_freqs = []
         for i in range(len(allele_freqs)):
-            allele_freqs[i] = np.delete(allele_freqs[i], invalid_indices)
+            valid_allele_freqs.append(np.delete(allele_freqs[i], invalid_indices))
 
         progress_callback[str, str, int].emit('check', 'Checking SNPs finished.', 0)
         progress_callback[str, str, int].emit('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
 
         self.allele_frequencies = {}
         for index, pop in enumerate(self.selected_pops):
-            self.allele_frequencies[pop] = np.array(allele_freqs[index])
+            self.allele_frequencies[pop] = np.array(valid_allele_freqs[index], dtype='d')
 
         self.init_admixture_model()
 
@@ -515,7 +518,7 @@ class Core(QObject):
         for i in range(num_aux_pops):
             for j in range(i + 1, num_aux_pops):
                 ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
-                if not isclose(np.dot(ab, ij), 0):
+                if not isclose(np.dot(ab, ij), 0, abs_tol=1e-15):
                     self.alpha_ratio[index] = np.dot(xb, ij) / np.dot(ab, ij)
                 index += 1
 
@@ -529,6 +532,42 @@ class Core(QObject):
     def compute_f4_ratio_histogram(self, bins):
         self.alpha_ratio_hist_bins = bins
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
+
+    # PCA of allele frequencies
+    def allele_frequencies_pca(self, debug=False):
+        # frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in self.selected_pops], dtype='d')
+        frequencies = np.array([self.allele_frequencies[pop] for pop in self.selected_pops], dtype='d')
+        centers = np.mean(frequencies, axis=0, dtype='d')
+        a = np.array([freqs - centers for freqs in frequencies], dtype='d')
+        aat = np.matmul(a, np.transpose(a))
+        eigenvalues, eigenvectors = np.linalg.eigh(aat / (aat.shape[0] - 1))
+        w = np.einsum('ji,jk', a, eigenvectors[:, ::-1])
+        norms = np.linalg.norm(w, axis=0)
+        wn = w / norms
+        pcs = np.einsum('ij,jk', a, wn)
+
+        if debug:
+            print(frequencies.shape)
+            print(centers.shape)
+            print(a.shape)
+            print(aat.shape)
+            print(eigenvectors.shape)
+            print(w.shape)
+            print(norms.shape)
+            print(pcs.shape)
+
+            file_path = Path('/home/jmcastelo/Code/Python/mixtum-data/pca_data.dat')
+
+            prec = 6
+            col_width = prec + 7
+            row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(pcs.shape[1])])
+
+            with file_path.open(mode='w', encoding='utf-8') as file:
+                file.write('PCs\n')
+                for pc in pcs:
+                    file.write(row_format.format(*pc) + '\n')
+                file.write('\nPC eigenvalues\n')
+                file.write(row_format.format(*eigenvalues) + '\n')
 
     # Compute all results
     def compute_results(self, progress_callback):
@@ -551,6 +590,8 @@ class Core(QObject):
         progress_callback[int].emit(8)
         self.f4_ratio()
         progress_callback[int].emit(9)
+
+        self.allele_frequencies_pca(True)
 
         return True
 
@@ -577,7 +618,7 @@ class Core(QObject):
     def save_population_allele_frequencies(self, file_path_str):
         file_path = Path(file_path_str)
 
-        with file_path.open(mode = 'w', encoding = 'utf-8') as file:
+        with file_path.open(mode='w', encoding='utf-8') as file:
             pops_width = max([len(name) for name in self.selected_pops])
             prec = 6
             col_width = max(prec + 7, pops_width)
