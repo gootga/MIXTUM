@@ -534,9 +534,9 @@ class Core(QObject):
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
 
     # PCA of allele frequencies
-    def allele_frequencies_pca(self, debug=False):
-        # frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in self.selected_pops], dtype='d')
-        frequencies = np.array([self.allele_frequencies[pop] for pop in self.selected_pops], dtype='d')
+    def allele_frequencies_pca(self, pops, debug=False):
+        frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in pops], dtype='d')
+        # frequencies = np.array([self.allele_frequencies[pop] for pop in pops], dtype='d')
         centers = np.mean(frequencies, axis=0, dtype='d')
         a = np.array([freqs - centers for freqs in frequencies], dtype='d')
         aat = np.matmul(a, np.transpose(a))
@@ -568,6 +568,8 @@ class Core(QObject):
                     file.write(row_format.format(*pc) + '\n')
                 file.write('\nPC eigenvalues\n')
                 file.write(row_format.format(*eigenvalues) + '\n')
+
+        return pcs
 
     # Compute all results
     def compute_results(self, progress_callback):

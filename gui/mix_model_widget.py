@@ -4,7 +4,9 @@ from gui.plots import Plot
 from gui.worker import Worker
 
 from PySide6.QtCore import Qt, Slot, QThreadPool
-from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QSpinBox, QFormLayout, QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout, QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
+from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QSpinBox, QFormLayout
+from PySide6.QtWidgets import QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
 
 
 

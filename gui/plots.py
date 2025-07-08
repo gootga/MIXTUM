@@ -8,19 +8,19 @@ import numpy as np
 
 
 class MatplotlibCanvas(FigureCanvasQTAgg):
-    def __init__(self, parent = None, width = 5, height = 4, dpi = 100):
-        self.fig = Figure(figsize = (width, height), dpi = dpi)
+    def __init__(self, parent = None, width=5, height=4, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
         super(MatplotlibCanvas, self).__init__(self.fig)
 
 
 
 class Plot(QWidget):
-    def __init__(self, title, xlabel, ylabel, width, height, dpi, show_axes = True, show_toolbar = True, polar = False):
+    def __init__(self, title, xlabel, ylabel, width, height, dpi, show_axes=True, show_toolbar=True, polar=False, projection=None, zlabel=None):
         QWidget.__init__(self)
 
         self.canvas = MatplotlibCanvas(self, width, height, dpi)
 
-        self.axes = self.canvas.fig.add_subplot(polar = polar)
+        self.axes = self.canvas.fig.add_subplot(polar=polar, projection=projection)
         
         self.axes.set_title(title)
 
@@ -38,6 +38,9 @@ class Plot(QWidget):
 
         if not show_axes:
             self.axes.axis('off')
+
+        if zlabel is not None:
+            self.axes.set_zlabel(zlabel)
 
         self.canvas.fig.tight_layout()
 
@@ -124,5 +127,28 @@ class Plot(QWidget):
 
         self.canvas.fig.legends = []
         self.canvas.fig.legend(loc = 'outside lower center', ncols = 1, fontsize = 'medium')
+
+        self.canvas.fig.canvas.draw()
+
+    def plot_pca(self, pcs: np.array):
+        self.axes.clear()
+
+        xmin = np.min(pcs[0, :])
+        xmax = np.max(pcs[0, :])
+        self.axes.set_xlim(xmin, xmax)
+
+        ymin = np.min(pcs[1, :])
+        ymax = np.max(pcs[1, :])
+        self.axes.set_ylim(ymin, ymax)
+
+        zmin = np.min(pcs[2, :])
+        zmax = np.max(pcs[2, :])
+        self.axes.set_zlim(zmin, zmax)
+
+        self.axes.scatter(pcs[0, :], pcs[1, :], pcs[2, :], alpha=0.5, color='k')
+
+        self.axes.plot(pcs[0, :], pcs[1, :], '.', color='r', zdir='z', zs=zmin)
+        self.axes.plot(pcs[0, :], pcs[2, :], '.', color='g', zdir='y', zs=ymin)
+        self.axes.plot(pcs[1, :], pcs[2, :], '.', color='b', zdir='x', zs=xmin)
 
         self.canvas.fig.canvas.draw()

@@ -3,6 +3,7 @@ from gui.log_widget import LogWidget
 from gui.input_files_widget import InputFilesWidget
 from gui.select_pops_widget import SelectPopsWidget
 from gui.mix_model_widget import MixModelWidget
+from gui.pca_widget import PCAWidget
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout
@@ -29,16 +30,21 @@ class MainWindow(QWidget):
         # Admixture model widget
         self.mix_model_widget = MixModelWidget(self.core)
 
+        # PCA widget
+        self.pca_widget = PCAWidget(self.core)
+
         # Connections
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
         self.input_files_widget.parsed_pops_changed.connect(self.sel_pops_widget.init_selected_table)
         self.sel_pops_widget.computation_result.connect(self.mix_model_widget.init_pop_tables)
+        self.sel_pops_widget.computation_result.connect(self.pca_widget.init_sel_pops_table)
 
         # Tab widget
         self.tab = QTabWidget()
         self.tab.addTab(self.input_files_widget, 'Input files')
         self.tab.addTab(self.sel_pops_widget, 'Populations')
         self.tab.addTab(self.mix_model_widget, 'Admixture model')
+        self.tab.addTab(self.pca_widget, 'PCA')
         self.tab.currentChanged.connect(self.set_log_source)
 
         self.set_log_source(0)
