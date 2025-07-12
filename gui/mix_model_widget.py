@@ -97,6 +97,32 @@ class MixModelWidget(QWidget):
         self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
         self.plot_angle = Plot('Angles', '', '', 4, 4, 100, show_toolbar = False, polar = True)
 
+        # Selected pop widgets: prime
+        self.prime_sel_pops_label = QLabel()
+        prime_sel_pops_form_layout = QFormLayout()
+        prime_sel_pops_form_layout.addRow('Selected auxiliaries:', self.prime_sel_pops_label)
+
+        prime_widget = QWidget()
+        prime_layout = QVBoxLayout(prime_widget)
+
+        prime_layout.addWidget(self.plot_prime)
+        prime_layout.addLayout(prime_sel_pops_form_layout)
+
+        self.plot_prime.selected_index_changed.connect(self.set_prime_sel_pops_label)
+
+        # Selected pop widgets: std
+        self.std_sel_pops_label = QLabel()
+        std_sel_pops_form_layout = QFormLayout()
+        std_sel_pops_form_layout.addRow('Selected auxiliaries:', self.std_sel_pops_label)
+
+        std_widget = QWidget()
+        std_layout = QVBoxLayout(std_widget)
+
+        std_layout.addWidget(self.plot_std)
+        std_layout.addLayout(std_sel_pops_form_layout)
+
+        self.plot_std.selected_index_changed.connect(self.set_std_sel_pops_label)
+
         # f4 ratio histogram bins spinbox
         self.bins_spinbox = QSpinBox(minimum = 1, maximum = 1000, value = self.core.alpha_ratio_hist_bins)
         self.bins_spinbox.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
@@ -126,8 +152,8 @@ class MixModelWidget(QWidget):
 
         # Plots tab widget
         self.tab_widget = QTabWidget()
-        self.tab_widget.addTab(self.plot_prime, 'Renormalized admixture')
-        self.tab_widget.addTab(self.plot_std, 'Standard admixture')
+        self.tab_widget.addTab(prime_widget, 'Renormalized admixture')
+        self.tab_widget.addTab(std_widget, 'Standard admixture')
         self.tab_widget.addTab(f4_ratio_histogram_widget, 'f4 ratio histogram')
         self.tab_widget.addTab(angles_widget, 'Angles')
 
@@ -348,3 +374,13 @@ class MixModelWidget(QWidget):
             file_names = dialog.selectedFiles()
             file_path = file_names[0]
             self.core.save_admixture_data(file_path)
+
+    @Slot(int)
+    def set_prime_sel_pops_label(self, index):
+        pop1, pop2 = self.core.get_aux_pop_pair(index)
+        self.prime_sel_pops_label.setText(f"{pop1} + {pop2}")
+
+    @Slot(int)
+    def set_std_sel_pops_label(self, index):
+        pop1, pop2 = self.core.get_aux_pop_pair(index)
+        self.std_sel_pops_label.setText(f"{pop1} + {pop2}")

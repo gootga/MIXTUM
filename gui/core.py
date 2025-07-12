@@ -444,6 +444,17 @@ class Core(QObject):
         self.f4ab_std /= num_alleles
         self.f4xb_std /= num_alleles
 
+    def get_aux_pop_pair(self, index):
+        num_aux_pops = len(self.aux_pops)
+        k = 0
+        for i in range(num_aux_pops):
+            for j in range(i + 1, num_aux_pops):
+                if k == index:
+                    return self.aux_pops[i], self.aux_pops[j]
+                k += 1
+        return '', ''
+
+
     # Least squares fit
     def least_squares(self, x, y):
         dim = len(x)
