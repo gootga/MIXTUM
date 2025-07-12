@@ -1,3 +1,4 @@
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
@@ -15,7 +16,11 @@ class MatplotlibCanvas(FigureCanvasQTAgg):
 
 
 class Plot(QWidget):
-    def __init__(self, title, xlabel, ylabel, width, height, dpi, show_axes=True, show_toolbar=True, polar=False, projection=None, zlabel=None):
+    # Signals
+    selected_index_changed = Signal(int)
+    selected_indices_changed = Signal(list)
+
+    def __init__(self, title, xlabel, ylabel, width, height, dpi, show_axes=True, show_toolbar=True, polar=False, projection=None, zlabel=None, selectable=False, multi_selectable=False):
         QWidget.__init__(self)
 
         self.canvas = MatplotlibCanvas(self, width, height, dpi)
@@ -42,6 +47,17 @@ class Plot(QWidget):
         if zlabel is not None:
             self.axes.set_zlabel(zlabel)
 
+        if selectable:
+            self.selectable_plot = None
+            self.sel_point_plot = None
+            self.conn = self.canvas.mpl_connect('button_press_event', self.select_point)
+
+        if multi_selectable:
+            self.multi_selectable_plots = []
+            self.sel_point_plot = None
+            self.sel_indices = []
+            self.conn = self.canvas.mpl_connect('button_press_event', self.multi_select_points)
+
         self.canvas.fig.tight_layout()
 
         layout = QVBoxLayout(self)
@@ -51,6 +67,38 @@ class Plot(QWidget):
             layout.addWidget(toolbar)
 
         layout.addWidget(self.canvas)
+
+    def select_point(self, event):
+        if self.selectable_plot is not None and event.inaxes == self.axes:
+            cont, ind = self.selectable_plot.contains(event)
+            if cont:
+                index = ind['ind'][0]
+                self.selected_index_changed.emit(index)
+
+    def multi_select_points(self, event):
+        if len(self.multi_selectable_plots) > 0 and event.inaxes == self.axes:
+            for plt in self.multi_selectable_plots:
+                cont, ind = plt.contains(event)
+                if cont:
+                    index = ind['ind'][0]
+                    if index in self.sel_indices:
+                        self.sel_indices.remove(index)
+                    else:
+                        self.sel_indices.append(index)
+                    self.selected_indices_changed.emit(self.sel_indices)
+
+    def plot_selected_point(self, x, y):
+        if self.sel_point_plot is not None:
+            self.sel_point_plot.remove()
+        self.sel_point_plot = self.axes.scatter(x, y, c='orange', s=6)
+
+    def plot_multiple_selected_points(self, points: np.array, indices):
+        if self.sel_point_plot is not None:
+            self.sel_point_plot.remove()
+        self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], points[2, :], alpha=0.5, c='orange', s=50)
+        self.canvas.fig.canvas.draw()
+
+        self.sel_indices = indices
 
     def plot_fit(self, x, y, alpha, title, xlabel, ylabel):
         self.axes.clear()
@@ -65,8 +113,8 @@ class Plot(QWidget):
 
         self.axes.axline((0, 0), slope = 1, color = '0.6', lw = 0.5)
 
-        self.axes.plot(x, y, '.')
-        self.axes.plot(x, alpha * x)
+        self.selectable_plot = self.axes.scatter(x=x, y=y, s=4)
+        self.axes.plot(x, alpha * x, linewidth=1)
 
         self.canvas.fig.canvas.draw()
 
@@ -130,8 +178,14 @@ class Plot(QWidget):
 
         self.canvas.fig.canvas.draw()
 
-    def plot_pca(self, pcs: np.array):
+    def plot_pca(self, pcs: np.array, title, xlabel, ylabel, zlabel):
         self.axes.clear()
+
+        self.axes.set_title(title)
+
+        self.axes.set_xlabel(xlabel)
+        self.axes.set_ylabel(ylabel)
+        self.axes.set_zlabel(zlabel)
 
         xmin = np.min(pcs[0, :])
         xmax = np.max(pcs[0, :])
@@ -145,10 +199,14 @@ class Plot(QWidget):
         zmax = np.max(pcs[2, :])
         self.axes.set_zlim(zmin, zmax)
 
-        self.axes.scatter(pcs[0, :], pcs[1, :], pcs[2, :], alpha=0.5, color='k')
+        self.multi_selectable_plots = [
+            self.axes.scatter(pcs[0, :], pcs[1, :], pcs[2, :], alpha=0.5, color='k'),
+            self.axes.scatter(pcs[0, :], pcs[1, :], color='r', zdir='z', zs=zmin),
+            self.axes.scatter(pcs[0, :], pcs[2, :], color='g', zdir='y', zs=ymin),
+            self.axes.scatter(pcs[1, :], pcs[2, :], color='b', zdir='x', zs=xmin)
+        ]
+        self.sel_indices = []
 
-        self.axes.plot(pcs[0, :], pcs[1, :], '.', color='r', zdir='z', zs=zmin)
-        self.axes.plot(pcs[0, :], pcs[2, :], '.', color='g', zdir='y', zs=ymin)
-        self.axes.plot(pcs[1, :], pcs[2, :], '.', color='b', zdir='x', zs=xmin)
+        self.sel_point_plot = None
 
         self.canvas.fig.canvas.draw()

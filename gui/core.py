@@ -100,6 +100,9 @@ class Core(QObject):
         self.alpha_ratio_hist_bins = 20
         self.num_cases = 0
 
+        self.principal_components = []
+        self.explained_variance = []
+
     def check_file_paths(self):
         self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
 
@@ -534,9 +537,9 @@ class Core(QObject):
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
 
     # PCA of allele frequencies
-    def allele_frequencies_pca(self, pops, debug=False):
-        frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in pops], dtype='d')
-        # frequencies = np.array([self.allele_frequencies[pop] for pop in pops], dtype='d')
+    def compute_pca(self, pops, debug=False):
+        # frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in pops], dtype='d')
+        frequencies = np.array([self.allele_frequencies[pop] for pop in pops], dtype='d')
         centers = np.mean(frequencies, axis=0, dtype='d')
         a = np.array([freqs - centers for freqs in frequencies], dtype='d')
         aat = np.matmul(a, np.transpose(a))
@@ -544,7 +547,8 @@ class Core(QObject):
         w = np.einsum('ji,jk', a, eigenvectors[:, ::-1])
         norms = np.linalg.norm(w, axis=0)
         wn = w / norms
-        pcs = np.einsum('ij,jk', a, wn)
+        self.principal_components = np.einsum('ij,jk', a, wn)
+        self.explained_variance = 100 * np.flip(eigenvalues)[:3]/np.sum(eigenvalues)
 
         if debug:
             print(frequencies.shape)
@@ -554,22 +558,20 @@ class Core(QObject):
             print(eigenvectors.shape)
             print(w.shape)
             print(norms.shape)
-            print(pcs.shape)
+            print(self.principal_components.shape)
 
             file_path = Path('/home/jmcastelo/Code/Python/mixtum-data/pca_data.dat')
 
             prec = 6
             col_width = prec + 7
-            row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(pcs.shape[1])])
+            row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(self.principal_components.shape[1])])
 
             with file_path.open(mode='w', encoding='utf-8') as file:
                 file.write('PCs\n')
-                for pc in pcs:
+                for pc in self.principal_components:
                     file.write(row_format.format(*pc) + '\n')
                 file.write('\nPC eigenvalues\n')
                 file.write(row_format.format(*eigenvalues) + '\n')
-
-        return pcs
 
     # Compute all results
     def compute_results(self, progress_callback):
@@ -592,8 +594,6 @@ class Core(QObject):
         progress_callback[int].emit(8)
         self.f4_ratio()
         progress_callback[int].emit(9)
-
-        self.allele_frequencies_pca(True)
 
         return True
 

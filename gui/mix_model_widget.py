@@ -91,8 +91,8 @@ class MixModelWidget(QWidget):
         self.save_results_button.clicked.connect(self.save_results)
 
         # Plots
-        self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100)
-        self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100)
+        self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100, selectable=True)
+        self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100, selectable=True)
         self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
         self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
         self.plot_angle = Plot('Angles', '', '', 4, 4, 100, show_toolbar = False, polar = True)
