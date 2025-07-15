@@ -2,7 +2,7 @@ from gui.plots import Plot
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, QPushButton, QSizePolicy
-from PySide6.QtWidgets import QTableWidgetItem, QTabWidget
+from PySide6.QtWidgets import QTableWidgetItem, QTabWidget, QFileDialog
 
 import numpy as np
 
@@ -40,6 +40,15 @@ class PCAWidget(QWidget):
         self.compute_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.compute_button.setEnabled(False)
 
+        # Compute button
+        self.save_button = QPushButton('Save PCA data')
+        self.save_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.save_button.setEnabled(False)
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.compute_button)
+        buttons_layout.addWidget(self.save_button)
+
         # PCA Plots
         self.pca_plot_3d = Plot('PCA', 'PC1', 'PC2', 5, 5, 100, projection='3d', zlabel='PC3', multi_selectable=True)
         self.pca_plot_2d = Plot('PCA', 'PC1', 'PC2', 5, 5, 100, multi_selectable=True)
@@ -52,7 +61,7 @@ class PCAWidget(QWidget):
         # Controls
         controls_layout = QVBoxLayout()
         controls_layout.addWidget(self.sel_pops_table)
-        controls_layout.addWidget(self.compute_button)
+        controls_layout.addLayout(buttons_layout)
 
         layout = QHBoxLayout(self)
         layout.addLayout(controls_layout, 1)
@@ -66,6 +75,7 @@ class PCAWidget(QWidget):
         self.pca_plot_3d.selected_indices_changed.connect(self.select_pops_pca_3d)
         self.compute_button.clicked.connect(self.compute_pca)
         self.compute_button.clicked.connect(self.init_sel_pops_pca_table)
+        self.save_button.clicked.connect(self.save_pca_data)
 
     @Slot(bool)
     def init_sel_pops_table(self, result):
@@ -144,3 +154,16 @@ class PCAWidget(QWidget):
 
         self.pca_plot_2d.plot_pca_2d(self.core.principal_components, 'PCA: 2D', xlabel, ylabel)
         self.pca_plot_3d.plot_pca_3d(self.core.principal_components, 'PCA: 3D', xlabel, ylabel, zlabel)
+
+        self.save_button.setEnabled(True)
+
+    @Slot()
+    def save_pca_data(self):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
+        dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+
+        if dialog.exec():
+            file_names = dialog.selectedFiles()
+            file_path = file_names[0]
+            self.core.save_pca_data(file_path)

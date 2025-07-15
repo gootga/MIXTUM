@@ -102,6 +102,7 @@ class Core(QObject):
 
         self.principal_components = []
         self.explained_variance = []
+        self.pca_eigenvalues = []
 
     def check_file_paths(self):
         self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
@@ -554,12 +555,12 @@ class Core(QObject):
         centers = np.mean(frequencies, axis=0, dtype='d')
         a = np.array([freqs - centers for freqs in frequencies], dtype='d')
         aat = np.matmul(a, np.transpose(a))
-        eigenvalues, eigenvectors = np.linalg.eigh(aat / (aat.shape[0] - 1))
+        self.pca_eigenvalues, eigenvectors = np.linalg.eigh(aat / (aat.shape[0] - 1))
         w = np.einsum('ji,jk', a, eigenvectors[:, ::-1])
         norms = np.linalg.norm(w, axis=0)
         wn = w / norms
         self.principal_components = np.einsum('ij,jk', a, wn)
-        self.explained_variance = 100 * np.flip(eigenvalues)[:3]/np.sum(eigenvalues)
+        self.explained_variance = 100 * np.flip(self.pca_eigenvalues)[:3]/np.sum(self.pca_eigenvalues)
 
         if debug:
             print(frequencies.shape)
@@ -570,19 +571,6 @@ class Core(QObject):
             print(w.shape)
             print(norms.shape)
             print(self.principal_components.shape)
-
-            file_path = Path('/home/jmcastelo/Code/Python/mixtum-data/pca_data.dat')
-
-            prec = 6
-            col_width = prec + 7
-            row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(self.principal_components.shape[1])])
-
-            with file_path.open(mode='w', encoding='utf-8') as file:
-                file.write('PCs\n')
-                for pc in self.principal_components:
-                    file.write(row_format.format(*pc) + '\n')
-                file.write('\nPC eigenvalues\n')
-                file.write(row_format.format(*eigenvalues) + '\n')
 
     # Compute all results
     def compute_results(self, progress_callback):
@@ -687,3 +675,18 @@ class Core(QObject):
             file.write(f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n')
             file.write(f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n')
             file.write(f'Standard admixture test: f3(c1, c2; x) < 0 ? {self.f3_test:8.6f}')
+
+    # Save PCA data
+    def save_pca_data(self, file_path_str):
+        file_path = Path(file_path_str)
+
+        prec = 6
+        col_width = prec + 7
+        row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(self.principal_components.shape[1])])
+
+        with file_path.open(mode='w', encoding='utf-8') as file:
+            file.write('PCs\n')
+            for pc in self.principal_components:
+                file.write(row_format.format(*pc) + '\n')
+            file.write('\nPC eigenvalues\n')
+            file.write(row_format.format(*self.pca_eigenvalues) + '\n')
