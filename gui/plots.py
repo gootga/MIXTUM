@@ -26,7 +26,9 @@ class Plot(QWidget):
         self.canvas = MatplotlibCanvas(self, width, height, dpi)
 
         self.axes = self.canvas.fig.add_subplot(polar=polar, projection=projection)
-        
+
+        self.projection = projection
+
         self.axes.set_title(title)
 
         if polar:
@@ -95,7 +97,12 @@ class Plot(QWidget):
     def plot_multiple_selected_points(self, points: np.array, indices):
         if self.sel_point_plot is not None:
             self.sel_point_plot.remove()
-        self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], points[2, :], alpha=0.5, c='orange', s=120)
+
+        if self.projection == '3d':
+            self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], points[2, :], alpha=0.5, c='orange', s=120)
+        else:
+            self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], alpha=0.5, c='orange', s=120)
+
         self.canvas.fig.canvas.draw()
 
         self.sel_indices = indices
@@ -178,7 +185,7 @@ class Plot(QWidget):
 
         self.canvas.fig.canvas.draw()
 
-    def plot_pca(self, pcs: np.array, title, xlabel, ylabel, zlabel):
+    def plot_pca_3d(self, pcs: np.array, title, xlabel, ylabel, zlabel):
         self.axes.clear()
 
         self.axes.set_title(title)
@@ -204,6 +211,31 @@ class Plot(QWidget):
             self.axes.scatter(pcs[0, :], pcs[1, :], color='r', zdir='z', zs=zmin, s=40),
             self.axes.scatter(pcs[0, :], pcs[2, :], color='g', zdir='y', zs=ymin, s=40),
             self.axes.scatter(pcs[1, :], pcs[2, :], color='b', zdir='x', zs=xmin, s=40)
+        ]
+        self.sel_indices = []
+
+        self.sel_point_plot = None
+
+        self.canvas.fig.canvas.draw()
+
+    def plot_pca_2d(self, pcs: np.array, title, xlabel, ylabel):
+        self.axes.clear()
+
+        self.axes.set_title(title)
+
+        self.axes.set_xlabel(xlabel)
+        self.axes.set_ylabel(ylabel)
+
+        # xmin = np.min(pcs[0, :])
+        # xmax = np.max(pcs[0, :])
+        # self.axes.set_xlim(xmin, xmax)
+
+        # ymin = np.min(pcs[1, :])
+        # ymax = np.max(pcs[1, :])
+        # self.axes.set_ylim(ymin, ymax)
+
+        self.multi_selectable_plots = [
+            self.axes.scatter(pcs[0, :], pcs[1, :], color='r', s=40),
         ]
         self.sel_indices = []
 

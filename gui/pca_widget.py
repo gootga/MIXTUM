@@ -2,7 +2,7 @@ from gui.plots import Plot
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, QPushButton, QSizePolicy
-from PySide6.QtWidgets import QTableWidgetItem
+from PySide6.QtWidgets import QTableWidgetItem, QTabWidget
 
 import numpy as np
 
@@ -40,9 +40,16 @@ class PCAWidget(QWidget):
         self.compute_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.compute_button.setEnabled(False)
 
-        # PCA Plot
-        self.pca_plot = Plot('PCA', 'PC1', 'PC2', 5, 5, 100, projection='3d', zlabel='PC3', multi_selectable=True)
+        # PCA Plots
+        self.pca_plot_3d = Plot('PCA', 'PC1', 'PC2', 5, 5, 100, projection='3d', zlabel='PC3', multi_selectable=True)
+        self.pca_plot_2d = Plot('PCA', 'PC1', 'PC2', 5, 5, 100, multi_selectable=True)
 
+        # PCA Plots tab widget
+        pca_tab_widget = QTabWidget()
+        pca_tab_widget.addTab(self.pca_plot_2d, 'PCA: 2D')
+        pca_tab_widget.addTab(self.pca_plot_3d, 'PCA: 3D')
+
+        # Controls
         controls_layout = QVBoxLayout()
         controls_layout.addWidget(self.sel_pops_table)
         controls_layout.addWidget(self.compute_button)
@@ -50,12 +57,13 @@ class PCAWidget(QWidget):
         layout = QHBoxLayout(self)
         layout.addLayout(controls_layout, 1)
         layout.addWidget(self.sel_pops_pca_table, 1)
-        layout.addWidget(self.pca_plot, 2)
+        layout.addWidget(pca_tab_widget, 2)
 
         # Connections
         self.sel_pops_table.itemSelectionChanged.connect(self.sel_pops_changed)
         self.sel_pops_pca_table.itemSelectionChanged.connect(self.plot_sel_pca_points)
-        self.pca_plot.selected_indices_changed.connect(self.select_pops_pca)
+        self.pca_plot_2d.selected_indices_changed.connect(self.select_pops_pca_2d)
+        self.pca_plot_3d.selected_indices_changed.connect(self.select_pops_pca_3d)
         self.compute_button.clicked.connect(self.compute_pca)
         self.compute_button.clicked.connect(self.init_sel_pops_pca_table)
 
@@ -94,12 +102,24 @@ class PCAWidget(QWidget):
         self.compute_button.setEnabled(len(self.sel_pops_table.selectedItems()) > 2)
 
     @Slot(list)
-    def select_pops_pca(self, indices):
+    def select_pops_pca_2d(self, indices):
         self.sel_pops_pca_table.clearSelection()
         for index in indices:
-            # pca_item = self.sel_pops_pca_table.item(self.pca_indices[index], 0)
             pca_items = self.sel_pops_pca_table.findItems(self.pca_names[index], Qt.MatchFlag.MatchExactly)
             pca_items[0].setSelected(True)
+
+        points = np.take(self.core.principal_components, indices, 1)
+        self.pca_plot_3d.plot_multiple_selected_points(points, indices)
+
+    @Slot(list)
+    def select_pops_pca_3d(self, indices):
+        self.sel_pops_pca_table.clearSelection()
+        for index in indices:
+            pca_items = self.sel_pops_pca_table.findItems(self.pca_names[index], Qt.MatchFlag.MatchExactly)
+            pca_items[0].setSelected(True)
+
+        points = np.take(self.core.principal_components, indices, 1)
+        self.pca_plot_2d.plot_multiple_selected_points(points, indices)
 
     @Slot()
     def plot_sel_pca_points(self):
@@ -108,7 +128,8 @@ class PCAWidget(QWidget):
             indices.append(self.pca_indices[item.text()])
 
         points = np.take(self.core.principal_components, indices, 1)
-        self.pca_plot.plot_multiple_selected_points(points, indices)
+        self.pca_plot_2d.plot_multiple_selected_points(points, indices)
+        self.pca_plot_3d.plot_multiple_selected_points(points, indices)
 
     @Slot()
     def compute_pca(self):
@@ -121,4 +142,5 @@ class PCAWidget(QWidget):
         ylabel = f"PC2 {self.core.explained_variance[1]:.1f}%"
         zlabel = f"PC3 {self.core.explained_variance[2]:.1f}%"
 
-        self.pca_plot.plot_pca(self.core.principal_components, 'PCA', xlabel, ylabel, zlabel)
+        self.pca_plot_2d.plot_pca_2d(self.core.principal_components, 'PCA: 2D', xlabel, ylabel)
+        self.pca_plot_3d.plot_pca_3d(self.core.principal_components, 'PCA: 3D', xlabel, ylabel, zlabel)
