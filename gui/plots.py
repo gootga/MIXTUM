@@ -90,12 +90,12 @@ class Plot(QWidget):
     def plot_selected_point(self, x, y):
         if self.sel_point_plot is not None:
             self.sel_point_plot.remove()
-        self.sel_point_plot = self.axes.scatter(x, y, c='orange', s=6)
+        self.sel_point_plot = self.axes.scatter(x, y, c='orange', s=50)
 
     def plot_multiple_selected_points(self, points: np.array, indices):
         if self.sel_point_plot is not None:
             self.sel_point_plot.remove()
-        self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], points[2, :], alpha=0.5, c='orange', s=50)
+        self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], points[2, :], alpha=0.5, c='orange', s=120)
         self.canvas.fig.canvas.draw()
 
         self.sel_indices = indices
@@ -108,13 +108,13 @@ class Plot(QWidget):
         self.axes.set_xlabel(xlabel)
         self.axes.set_ylabel(ylabel)
 
-        self.axes.axhline(y = 0, color = '0.6', lw = 0.5)
-        self.axes.axvline(x = 0, color = '0.6', lw = 0.5)
+        self.axes.axhline(y=0, c='0.6', lw=0.5)
+        self.axes.axvline(x=0, c='0.6', lw=0.5)
 
-        self.axes.axline((0, 0), slope = 1, color = '0.6', lw = 0.5)
+        self.axes.axline((0, 0), slope=1, color='0.6', lw=0.5)
 
-        self.selectable_plot = self.axes.scatter(x=x, y=y, s=4)
-        self.axes.plot(x, alpha * x, linewidth=1)
+        self.selectable_plot = self.axes.scatter(x=x, y=y, s=10)
+        self.axes.plot(x, alpha * x, c='r', lw=0.5)
 
         self.canvas.fig.canvas.draw()
 
@@ -200,10 +200,10 @@ class Plot(QWidget):
         self.axes.set_zlim(zmin, zmax)
 
         self.multi_selectable_plots = [
-            self.axes.scatter(pcs[0, :], pcs[1, :], pcs[2, :], alpha=0.5, color='k'),
-            self.axes.scatter(pcs[0, :], pcs[1, :], color='r', zdir='z', zs=zmin),
-            self.axes.scatter(pcs[0, :], pcs[2, :], color='g', zdir='y', zs=ymin),
-            self.axes.scatter(pcs[1, :], pcs[2, :], color='b', zdir='x', zs=xmin)
+            self.axes.scatter(pcs[0, :], pcs[1, :], pcs[2, :], alpha=0.5, color='k', s=40),
+            self.axes.scatter(pcs[0, :], pcs[1, :], color='r', zdir='z', zs=zmin, s=40),
+            self.axes.scatter(pcs[0, :], pcs[2, :], color='g', zdir='y', zs=ymin, s=40),
+            self.axes.scatter(pcs[1, :], pcs[2, :], color='b', zdir='x', zs=xmin, s=40)
         ]
         self.sel_indices = []
 
