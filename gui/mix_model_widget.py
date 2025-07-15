@@ -105,8 +105,8 @@ class MixModelWidget(QWidget):
         prime_widget = QWidget()
         prime_layout = QVBoxLayout(prime_widget)
 
-        prime_layout.addWidget(self.plot_prime)
-        prime_layout.addLayout(prime_sel_pops_form_layout)
+        prime_layout.addWidget(self.plot_prime, 1)
+        prime_layout.addLayout(prime_sel_pops_form_layout, 0)
 
         self.plot_prime.selected_index_changed.connect(self.set_prime_sel_pops_label)
 
@@ -118,8 +118,8 @@ class MixModelWidget(QWidget):
         std_widget = QWidget()
         std_layout = QVBoxLayout(std_widget)
 
-        std_layout.addWidget(self.plot_std)
-        std_layout.addLayout(std_sel_pops_form_layout)
+        std_layout.addWidget(self.plot_std, 1)
+        std_layout.addLayout(std_sel_pops_form_layout, 0)
 
         self.plot_std.selected_index_changed.connect(self.set_std_sel_pops_label)
 
@@ -136,8 +136,8 @@ class MixModelWidget(QWidget):
         # f4 ratio histogram widget
         f4_ratio_histogram_widget = QWidget()
         f4_ratio_histogram_layout = QVBoxLayout(f4_ratio_histogram_widget)
-        f4_ratio_histogram_layout.addWidget(self.plot_histogram)
-        f4_ratio_histogram_layout.addLayout(bins_form_layout)
+        f4_ratio_histogram_layout.addWidget(self.plot_histogram, 1)
+        f4_ratio_histogram_layout.addLayout(bins_form_layout, 0)
 
         # Angles widget
         angles_widget = QWidget()
