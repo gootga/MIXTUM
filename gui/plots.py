@@ -207,10 +207,10 @@ class Plot(QWidget):
         self.axes.set_zlim(zmin, zmax)
 
         self.multi_selectable_plots = [
-            self.axes.scatter(pcs[0, :], pcs[1, :], pcs[2, :], alpha=0.5, color='k', s=40),
-            self.axes.scatter(pcs[0, :], pcs[1, :], color='r', zdir='z', zs=zmin, s=40),
-            self.axes.scatter(pcs[0, :], pcs[2, :], color='g', zdir='y', zs=ymin, s=40),
-            self.axes.scatter(pcs[1, :], pcs[2, :], color='b', zdir='x', zs=xmin, s=40)
+            self.axes.scatter(pcs[:, 0], pcs[:, 1], pcs[:, 2], alpha=0.5, color='k', s=40),
+            self.axes.scatter(pcs[:, 0], pcs[:, 1], color='r', zdir='z', zs=zmin, s=40),
+            self.axes.scatter(pcs[:, 0], pcs[:, 2], color='g', zdir='y', zs=ymin, s=40),
+            self.axes.scatter(pcs[:, 1], pcs[:, 2], color='b', zdir='x', zs=xmin, s=40)
         ]
         self.sel_indices = []
 
@@ -235,7 +235,7 @@ class Plot(QWidget):
         # self.axes.set_ylim(ymin, ymax)
 
         self.multi_selectable_plots = [
-            self.axes.scatter(pcs[0, :], pcs[1, :], color='r', s=40),
+            self.axes.scatter(pcs[:, 0], pcs[:, 1], color='r', s=40)
         ]
         self.sel_indices = []
 
