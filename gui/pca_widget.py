@@ -118,7 +118,7 @@ class PCAWidget(QWidget):
             pca_items = self.sel_pops_pca_table.findItems(self.pca_names[index], Qt.MatchFlag.MatchExactly)
             pca_items[0].setSelected(True)
 
-        points = np.take(self.core.principal_components, indices, 1)
+        points = np.take(self.core.principal_components, indices, 0)
         self.pca_plot_3d.plot_multiple_selected_points(points, indices)
 
     @Slot(list)
@@ -128,7 +128,7 @@ class PCAWidget(QWidget):
             pca_items = self.sel_pops_pca_table.findItems(self.pca_names[index], Qt.MatchFlag.MatchExactly)
             pca_items[0].setSelected(True)
 
-        points = np.take(self.core.principal_components, indices, 1)
+        points = np.take(self.core.principal_components, indices, 0)
         self.pca_plot_2d.plot_multiple_selected_points(points, indices)
 
     @Slot()
@@ -137,7 +137,7 @@ class PCAWidget(QWidget):
         for item in self.sel_pops_pca_table.selectedItems():
             indices.append(self.pca_indices[item.text()])
 
-        points = np.take(self.core.principal_components, indices, 1)
+        points = np.take(self.core.principal_components, indices, 0)
         self.pca_plot_2d.plot_multiple_selected_points(points, indices)
         self.pca_plot_3d.plot_multiple_selected_points(points, indices)
 

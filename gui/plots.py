@@ -99,9 +99,9 @@ class Plot(QWidget):
             self.sel_point_plot.remove()
 
         if self.projection == '3d':
-            self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], points[2, :], alpha=0.5, c='orange', s=120)
+            self.sel_point_plot = self.axes.scatter(points[:, 0], points[:, 1], points[:, 2], alpha=0.5, c='orange', s=120)
         else:
-            self.sel_point_plot = self.axes.scatter(points[0, :], points[1, :], alpha=0.5, c='orange', s=120)
+            self.sel_point_plot = self.axes.scatter(points[:, 0], points[:, 1], alpha=0.5, c='orange', s=120)
 
         self.canvas.fig.canvas.draw()
 
