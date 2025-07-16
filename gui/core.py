@@ -11,7 +11,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 event = Event()
 
 # Compute frequencies given list of alleles
-def allele_frequency(alleles):
+def allele_frequency_bak(alleles):
     freq = np.double(0)
     num_alleles = np.uint(0)
 
@@ -24,6 +24,20 @@ def allele_frequency(alleles):
         return -1
 
     return np.double(freq / num_alleles)
+
+def allele_frequency(alleles):
+    freq = 0
+    num_alleles = 0
+
+    for a in alleles:
+        if a != 9:
+            freq += (2 - a) / 2
+            num_alleles += 1
+
+    if num_alleles == 0:
+        return -1
+
+    return freq / num_alleles
 
 # Compute frequencies of a population
 def population_allele_frequencies(file_path, pop_indices, allele_freqs):
