@@ -76,6 +76,7 @@ class Core(QObject):
         self.parent1_pop = ''
         self.parent2_pop = ''
         self.aux_pops = []
+        self.aux_pops_computed = []
 
         self.alpha_pre_jl = 0
         self.cosine_pre_jl = 0
@@ -446,12 +447,12 @@ class Core(QObject):
         self.f4xb_std /= num_alleles
 
     def get_aux_pop_pair(self, index):
-        num_aux_pops = len(self.aux_pops)
+        num_aux_pops = len(self.aux_pops_computed)
         k = 0
         for i in range(num_aux_pops):
             for j in range(i + 1, num_aux_pops):
                 if k == index:
-                    return self.aux_pops[i], self.aux_pops[j]
+                    return self.aux_pops_computed[i], self.aux_pops_computed[j]
                 k += 1
         return '', ''
 
@@ -593,6 +594,8 @@ class Core(QObject):
         progress_callback[int].emit(8)
         self.f4_ratio()
         progress_callback[int].emit(9)
+
+        self.aux_pops_computed = self.aux_pops
 
         return True
 
