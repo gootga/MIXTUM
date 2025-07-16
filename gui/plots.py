@@ -194,16 +194,16 @@ class Plot(QWidget):
         self.axes.set_ylabel(ylabel)
         self.axes.set_zlabel(zlabel)
 
-        xmin = np.min(pcs[0, :])
-        xmax = np.max(pcs[0, :])
+        xmin = np.min(pcs[:, 0])
+        xmax = np.max(pcs[:, 0])
         self.axes.set_xlim(xmin, xmax)
 
-        ymin = np.min(pcs[1, :])
-        ymax = np.max(pcs[1, :])
+        ymin = np.min(pcs[:, 1])
+        ymax = np.max(pcs[:, 1])
         self.axes.set_ylim(ymin, ymax)
 
-        zmin = np.min(pcs[2, :])
-        zmax = np.max(pcs[2, :])
+        zmin = np.min(pcs[:, 2])
+        zmax = np.max(pcs[:, 2])
         self.axes.set_zlim(zmin, zmax)
 
         self.multi_selectable_plots = [
@@ -225,14 +225,6 @@ class Plot(QWidget):
 
         self.axes.set_xlabel(xlabel)
         self.axes.set_ylabel(ylabel)
-
-        # xmin = np.min(pcs[0, :])
-        # xmax = np.max(pcs[0, :])
-        # self.axes.set_xlim(xmin, xmax)
-
-        # ymin = np.min(pcs[1, :])
-        # ymax = np.max(pcs[1, :])
-        # self.axes.set_ylim(ymin, ymax)
 
         self.multi_selectable_plots = [
             self.axes.scatter(pcs[:, 0], pcs[:, 1], color='r', s=40)
