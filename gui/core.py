@@ -27,20 +27,6 @@ from PySide6.QtCore import QObject, Signal, Slot
 event = Event()
 
 # Compute frequencies given list of alleles
-def allele_frequency_bak(alleles):
-    freq = np.double(0)
-    num_alleles = np.uint(0)
-
-    for a in alleles:
-        if a != 9:
-            freq += np.double((2 - a) / 2)
-            num_alleles += 1
-
-    if num_alleles == 0:
-        return -1
-
-    return np.double(freq / num_alleles)
-
 def allele_frequency(alleles):
     freq = 0
     num_alleles = 0
@@ -131,6 +117,7 @@ class Core(QObject):
         self.alpha_ratio_hist_bins = 20
         self.num_cases = 0
 
+        self.pca_pops = []
         self.principal_components = []
         self.explained_variance = []
         self.pca_eigenvalues = []
@@ -580,7 +567,7 @@ class Core(QObject):
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
 
     # PCA of allele frequencies
-    def compute_pca(self, pops, debug=False):
+    def compute_pca(self, pops):
         # frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in pops], dtype='d')
         frequencies = np.array([self.allele_frequencies[pop] for pop in pops], dtype='d')
         centers = np.mean(frequencies, axis=0, dtype='d')
@@ -592,16 +579,7 @@ class Core(QObject):
         wn = w / norms
         self.principal_components = np.einsum('ij,jk', a, wn)
         self.explained_variance = 100 * np.flip(self.pca_eigenvalues)[:3]/np.sum(self.pca_eigenvalues)
-
-        if debug:
-            print(frequencies.shape)
-            print(centers.shape)
-            print(a.shape)
-            print(aat.shape)
-            print(eigenvectors.shape)
-            print(w.shape)
-            print(norms.shape)
-            print(self.principal_components.shape)
+        self.pca_pops = pops
 
     # Compute all results
     def compute_results(self, progress_callback):
@@ -644,7 +622,7 @@ class Core(QObject):
         text += f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n'
         text += f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n'
         text += f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n'
-        text += f'Standard admixture test: f3(c1, c2; x) < 0 ? {self.f3_test:8.6f}'
+        text += f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}'
 
         return text
 
@@ -672,7 +650,7 @@ class Core(QObject):
         file_path = Path(file_path_str)
 
         with file_path.open(mode = 'w', encoding = 'utf-8') as file:
-            aux_pops_width = max([len(name) for name in self.aux_pops])
+            aux_pops_width = max([len(name) for name in self.aux_pops_computed])
             prec = 6
             col_width = prec + 7
 
@@ -707,7 +685,7 @@ class Core(QObject):
             file.write(f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n')
             file.write(f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n')
             file.write(f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n')
-            file.write(f'Standard admixture test: f3(c1, c2; x) < 0 ? {self.f3_test:8.6f}')
+            file.write(f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}')
 
     # Save PCA data
     def save_pca_data(self, file_path_str):
@@ -717,9 +695,13 @@ class Core(QObject):
         col_width = prec + 7
         row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(self.principal_components.shape[1])])
 
+        pops_width = max(max([len(name) for name in self.pca_pops]), len('Populations'))
+        headers = '{0:^{pops_width}} {1:^{col_width}} {2:^{col_width}} {3:^{col_width}} {4:^{col_width}}'.format('Populations', 'PC1', 'PC2', 'PC3', '...', col_width=col_width, pops_width=pops_width)
+
         with file_path.open(mode='w', encoding='utf-8') as file:
-            file.write('PCs\n')
-            for pc in self.principal_components:
-                file.write(row_format.format(*pc) + '\n')
+            file.write(headers + '\n')
+            for i, pc in enumerate(self.principal_components):
+                pop_name = '{0:^{pops_width}}'.format(self.pca_pops[i], pops_width=pops_width)
+                file.write(pop_name + row_format.format(*pc) + '\n')
             file.write('\nPC eigenvalues\n')
-            file.write(row_format.format(*self.pca_eigenvalues) + '\n')
+            file.write(row_format.format(*np.flip(self.pca_eigenvalues)) + '\n')
