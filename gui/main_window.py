@@ -20,6 +20,7 @@ from gui.input_files_widget import InputFilesWidget
 from gui.select_pops_widget import SelectPopsWidget
 from gui.mix_model_widget import MixModelWidget
 from gui.pca_widget import PCAWidget
+from gui.f_statistics_widget import FStatisticsWidget
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout
@@ -49,11 +50,15 @@ class MainWindow(QWidget):
         # PCA widget
         self.pca_widget = PCAWidget(self.core)
 
+        # f-statistics widget
+        self.f_statistics_widget = FStatisticsWidget(self.core)
+
         # Connections
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
         self.input_files_widget.parsed_pops_changed.connect(self.sel_pops_widget.init_selected_table)
         self.sel_pops_widget.computation_result.connect(self.mix_model_widget.init_pop_tables)
         self.sel_pops_widget.computation_result.connect(self.pca_widget.init_sel_pops_table)
+        self.sel_pops_widget.computation_result.connect(self.f_statistics_widget.init_pop_tables)
 
         # Tab widget
         self.tab = QTabWidget()
@@ -61,6 +66,7 @@ class MainWindow(QWidget):
         self.tab.addTab(self.sel_pops_widget, 'Populations')
         self.tab.addTab(self.mix_model_widget, 'Admixture model')
         self.tab.addTab(self.pca_widget, 'PCA')
+        self.tab.addTab(self.f_statistics_widget, 'f-statistics')
         self.tab.currentChanged.connect(self.set_log_source)
 
         self.set_log_source(0)
@@ -82,6 +88,8 @@ class MainWindow(QWidget):
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.mix_model_widget.log.is_changed_signal_connected():
                 self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.f_statistics_widget.log.is_changed_signal_connected():
+                self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
             self.input_files_widget.log.changed.connect(self.log_widget.set_text)
             self.input_files_widget.log.set_text()
         elif index == 1:
@@ -89,6 +97,8 @@ class MainWindow(QWidget):
                 self.input_files_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.mix_model_widget.log.is_changed_signal_connected():
                 self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.f_statistics_widget.log.is_changed_signal_connected():
+                self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
             self.sel_pops_widget.log.changed.connect(self.log_widget.set_text)
             self.sel_pops_widget.log.set_text()
         elif index == 2:
@@ -96,8 +106,19 @@ class MainWindow(QWidget):
                 self.input_files_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.sel_pops_widget.log.is_changed_signal_connected():
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.f_statistics_widget.log.is_changed_signal_connected():
+                self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
             self.mix_model_widget.log.changed.connect(self.log_widget.set_text)
             self.mix_model_widget.log.set_text()
+        elif index == 4:
+            if self.sel_pops_widget.log.is_changed_signal_connected():
+                self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.mix_model_widget.log.is_changed_signal_connected():
+                self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.sel_pops_widget.log.is_changed_signal_connected():
+                self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
+            self.f_statistics_widget.log.changed.connect(self.log_widget.set_text)
+            self.f_statistics_widget.log.set_text()
 
     def closeEvent(self, event):
         self.mix_model_widget.plots_panel = None

@@ -566,6 +566,26 @@ class Core(QObject):
         self.alpha_ratio_hist_bins = bins
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
 
+    # Computation of f2
+    def compute_f2(self, pops):
+        ab = self.allele_frequencies[pops[0]] - self.allele_frequencies[pops[1]]
+        num_alleles = self.allele_frequencies[pops[0]].size
+        return np.dot(ab, ab) / num_alleles
+
+    # Computation of f3
+    def compute_f3(self, pops):
+        ac = self.allele_frequencies[pops[0]] - self.allele_frequencies[pops[2]]
+        bc = self.allele_frequencies[pops[1]] - self.allele_frequencies[pops[2]]
+        num_alleles = self.allele_frequencies[pops[0]].size
+        return np.dot(ac, bc) / num_alleles
+
+    # Computation of f4
+    def compute_f4(self, pops):
+        ab = self.allele_frequencies[pops[0]] - self.allele_frequencies[pops[1]]
+        cd = self.allele_frequencies[pops[2]] - self.allele_frequencies[pops[3]]
+        num_alleles = self.allele_frequencies[pops[0]].size
+        return np.dot(ab, cd) / num_alleles
+
     # PCA of allele frequencies
     def compute_pca(self, pops):
         # frequencies = np.array([(1 - self.allele_frequencies[pop]) * 2 for pop in pops], dtype='d')
