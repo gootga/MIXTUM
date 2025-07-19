@@ -1,8 +1,18 @@
-# Mixtum: The geometry of admixture in population genetics
+# Mixtum: a graphical tool for two-way admixture analysis in population genetics based on $f$-statistics
+
+## Abstract
+
+Mixtum is a Python-based code that provides estimates of ancestry contributions in a hybrid derived from a two-way admixture based on bi-allelic genotype data.
+The outcomes of Mixtum are based on the geometric interpretation of the  $f$-statistics formalism. Designed with the intent of being user-friendly as a priority, Mixtum allows to handle interactively a menu of populations provided by the user to build up different admixture models altogether with the set of auxiliary populations required by the framework. The results are presented graphically. More importantly, Mixtum provides a novel index (an angle) that assesses the quality of the ancestral reconstruction of the model under scrutiny. The conventional quantities such as the  $f_3$ admixture test and the $f_4$-ratio statistics are also provided.
+
+### References
+
+* J.-A. Oteo and G. Oteo-García. The geometry of admixture in population genetics: the blessing of dimensionality. Genetics, 228(2):iyae134, 08 2024. ISSN 1943-2631. doi: 10.1093/genetics/iyae134. URL https://doi.org/10.1093/genetics/iyae134
+* G. Oteo-García and J.-A. Oteo. A Geometrical Framework for f-Statistics. Bulletin of Mathematical Biology, 83:14, 2021. ISSN 1522-9602. doi: 10.1007/s11538-020-00850-8. URL https://doi.org/10.1007/s11538-020-00850-8
 
 ## Overview
 
-Mixtum has been developed as a standalone Python script and as a graphical user interface. Moreover, an experimental [website](https://jmcastelo.github.io/mixtum/) version exists. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependencies are included in the executable and don't need to be installed.
+Mixtum has been developed as a standalone Python script and as a graphical user interface (GUI). The GUI has been more thoroughly tested than the script version. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependencies are included in the executable and don't need to be installed.
 
 ### Standalone script
 
@@ -93,6 +103,6 @@ To convert the code into a website, run the following commands.
     panel convert mixtum_panel.py --to pyodide-worker --out docs
     mv docs/mixtum_panel.html docs/index.html
 
-The website will be available as a GitHub page on the repository.
+The website will be available as a GitHub page on the repository, once it has been activated.
 
 Note that in order for some Panel features to work we have used a beta version installed from the GitHub repository of Panel, and converted Mixtum to `pyscript` format. Once these features have been incorporated into the main Panel release, one can convert to `pyodide-worker` format as above.
