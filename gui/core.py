@@ -557,7 +557,7 @@ class Core(QObject):
 
         alpha_01 = self.alpha_ratio[(self.alpha_ratio >= 0) & (self.alpha_ratio <= 1)]
         self.alpha_ratio_avg = np.average(alpha_01)
-        self.alpha_ratio_std_dev = np.std(alpha_01) * 1.96
+        self.alpha_ratio_std_dev = np.std(alpha_01, dtype='d') * 1.96
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
         self.num_cases = alpha_01.size
 
@@ -672,7 +672,7 @@ class Core(QObject):
         file_path = Path(file_path_str)
 
         with file_path.open(mode = 'w', encoding = 'utf-8') as file:
-            num_aux_pops = len(self.aux_pops)
+            num_aux_pops = len(self.aux_pops_computed)
             num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
             file.write(f'Admixture model: {self.hybrid_pop} = {self.parent1_pop} + {self.parent2_pop}\n')
@@ -685,7 +685,9 @@ class Core(QObject):
             file.write(f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n')
             file.write(f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n')
             file.write(f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n')
-            file.write(f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}')
+            file.write(f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}\n')
+            file.write('Auxiliary population names:\n')
+            file.write('\n'.join(self.aux_pops_computed))
 
     # Save PCA data
     def save_pca_data(self, file_path_str):
