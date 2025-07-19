@@ -693,7 +693,8 @@ class Core(QObject):
 
         prec = 6
         col_width = prec + 7
-        row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(self.principal_components.shape[1])])
+        row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(6)])
+        eig_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(len(self.pca_eigenvalues))])
 
         pops_width = max(max([len(name) for name in self.pca_pops]), len('Populations'))
         headers = '{0:^{pops_width}} {1:^{col_width}} {2:^{col_width}} {3:^{col_width}} {4:^{col_width}}'.format('Populations', 'PC1', 'PC2', 'PC3', '...', col_width=col_width, pops_width=pops_width)
@@ -702,6 +703,6 @@ class Core(QObject):
             file.write(headers + '\n')
             for i, pc in enumerate(self.principal_components):
                 pop_name = '{0:^{pops_width}}'.format(self.pca_pops[i], pops_width=pops_width)
-                file.write(pop_name + row_format.format(*pc) + '\n')
+                file.write(pop_name + row_format.format(*pc[:6]) + '\n')
             file.write('\nPC eigenvalues\n')
-            file.write(row_format.format(*np.flip(self.pca_eigenvalues)) + '\n')
+            file.write(eig_format.format(*np.flip(self.pca_eigenvalues)) + '\n')
