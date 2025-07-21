@@ -146,8 +146,8 @@ class FStatisticsWidget(QWidget):
         self.log.clear_entry('f3')
         for n in range(3):
             rot_pops = pops[n:] + pops[:n]
-            f3 = self.core.compute_f3(rot_pops)
-            self.log.append_entry('f3', f"f3({rot_pops[0]}, {rot_pops[1]}; {rot_pops[2]}) = {f3:6.4f}")
+            f3, angle = self.core.compute_f3(rot_pops)
+            self.log.append_entry('f3', f"f3({rot_pops[0]}, {rot_pops[1]}; {rot_pops[2]}) = {f3:6.4f} , angle = {angle:6.2f} deg")
 
     @Slot()
     def compute_f4(self):
@@ -156,5 +156,5 @@ class FStatisticsWidget(QWidget):
         right_pops = pops[1:]
         for n in range(3):
             rot_pops = [pops[0]] + right_pops[n:] + right_pops[:n]
-            f4 = self.core.compute_f4(rot_pops)
-            self.log.append_entry('f4', f"f4({rot_pops[0]}, {rot_pops[1]}; {rot_pops[2]}, {rot_pops[3]}) = {f4:6.4f}")
+            f4, angle = self.core.compute_f4(rot_pops)
+            self.log.append_entry('f4', f"f4({rot_pops[0]}, {rot_pops[1]}; {rot_pops[2]}, {rot_pops[3]}) = {f4:6.4f} , angle = {angle:6.2f} deg")

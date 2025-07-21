@@ -324,7 +324,7 @@ class MixModelWidget(QWidget):
         sel_items = self.aux_table.selectedItems()
         self.core.set_aux_pops([item.text() for item in sel_items])
         self.check_aux_table_selection()
-        self.compute_button.setEnabled(len(self.aux_table.selectedItems()) > 0)
+        self.compute_button.setEnabled(len(self.aux_table.selectedItems()) > 2)
 
     @Slot(str)
     def computation_finished(self, worker_name):
