@@ -60,9 +60,29 @@ The standalone script depends on `numpy` and `matplotlib`. The graphical user in
 
 ## Usage instructions
 
-### Standalone script
+Mixtum is organized as a set of tabs, each of which contains a step of the workflow. Below these tabs, a log console displays information relevant to each step. The workflow may be described as follows. 
 
-### Graphical user interface
+#### 1. Input files.
+
+It is compulsory to select the triad '*.geno, *.ind, *.snp'. They are in EIGENSTRAT format. Optionally, you can select and load a plain text file with a list of populations of interest, in a column. Then, parse and check the input files. This may take several minutes depending on the size of the dataset and the CPU.
+
+#### 2. Populations
+
+The left table contains all the population names in '*.ind'. They may be ordered alphabetically by clicking on the table's header, and selected/deselected with the mouse left button. Note that clicking while pressing the `shift` key allows you to select a range of populations, or pick specific ones with the `ctrl` key. The combination `ctrl + a` allows the selection of all populations. 
+
+After searching and choosing populations of interest, select the number of computation processes to parallelize the frequencies computation. Check how many cores your CPU has to tune this parameter. Then compute the frequencies to build up the table of allele frequencies on which all the f-statistics are computed or, equivalently, on which all the scalar products are carried out.
+
+#### 4. Admixture model
+   
+Choose the admixture model and the set of auxiliary populations (at least 3) on the left side of the tab. Then compute the results. Ensure a reasonable stability of the outcomes with respect to the cardinal of the set. You can then examine the linear regression plot. A glimpse may already inform you about the quality of the admixture model. Examine the angles, too. A good ancestral admixture reconstruction conveys the Post-JL angle is close to 180 degrees. A decreasing of the angle from Pre-JL to Post-JL points towards a bad admixture model.
+
+#### 5. PCA
+
+Choose populations of interest to visualize their allele frequencies in terms of the Principal Components content in 2D and 3D. You can identify which points on the plots correspond to which population by clicking on them, or alternatively, by selecting populations on the second table, which contains those used in the PCA computation.
+
+#### 6. f-statistics
+
+Compute f2, f3 and f4 for specific combinations of populations. The statistics f3 and f4 can be assigned to an angle in the interval [0,180] deg. which gives them a scale for comparison purposes between different combinations of populations.
 
 ## Building the executable
 
