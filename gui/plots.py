@@ -108,16 +108,16 @@ class Plot(QWidget):
     def plot_selected_point(self, x, y):
         if self.sel_point_plot is not None:
             self.sel_point_plot.remove()
-        self.sel_point_plot = self.axes.scatter(x, y, c='orange', s=50)
+        self.sel_point_plot = self.axes.scatter(x, y, c='cyan', s=50)
 
     def plot_multiple_selected_points(self, points: np.array, indices):
         if self.sel_point_plot is not None:
             self.sel_point_plot.remove()
 
         if self.projection == '3d':
-            self.sel_point_plot = self.axes.scatter(points[:, 0], points[:, 1], points[:, 2], alpha=0.5, c='orange', s=120)
+            self.sel_point_plot = self.axes.scatter(points[:, 0], points[:, 1], points[:, 2], alpha=0.5, c='cyan', s=120)
         else:
-            self.sel_point_plot = self.axes.scatter(points[:, 0], points[:, 1], alpha=0.5, c='orange', s=120)
+            self.sel_point_plot = self.axes.scatter(points[:, 0], points[:, 1], alpha=0.5, c='cyan', s=120)
 
         self.canvas.fig.canvas.draw()
 
