@@ -11,21 +11,21 @@ Mixtum is a Python-based code that estimates ancestry contributions in a hybrid 
 
 ## Overview
 
-Mixtum has been developed as a standalone Python script and as a graphical user interface (GUI). The GUI has been more thoroughly tested than the script version. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependencies are included in the executable and don't need to be installed.
+Mixtum has been developed as a standalone Python script and as a graphical user interface (GUI). The GUI has been more thoroughly tested than the script version, so use the script at your own risk. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependencies are included in the executable and don't need to be installed.
+
+### Graphical user interface
+
+A GUI has been developed with Qt's `PySide6` library. Please, download the release and run the executable, or get the source code and run it with the following command:
+
+    python mixtum_gui.py
 
 ### Standalone script
 
-To be run from the command line, this script needs some arguments which inform it where the needed input files are located, where to save the resulting output files and the number of parallel processes with which to perform the computations.
+To be run from the command line, this script needs some arguments which inform it where the needed input files are located, where to save the resulting output files and the number of parallel processes with which to perform the computations. Note that the script version of Mixtum is not as complete and well-tested than the GUI version.
 
 To get help, please run the following command:
 
     python mixtum.py --help
-
-### Graphical user interface
-
-A GUI has been developed with Qt's `PySide6` library. Please, download it and run the executable, or get the source code and run it with the following command:
-
-    python mixtum_gui.py
 
 ## Dependencies
 
@@ -57,7 +57,7 @@ The standalone script depends on `numpy` and `matplotlib`. The graphical user in
 
     pip install pyside6 numpy matplotlib
 
-## Usage instructions
+## Usage instructions (GUI)
 
 Mixtum is organized as a set of tabs, each of which contains a step of the workflow. Below these tabs, a log console displays information relevant to each step. The workflow may be described as follows. 
 
@@ -73,7 +73,7 @@ After searching and choosing populations of interest, select the number of compu
 
 #### 4. Admixture model
    
-Choose the admixture model and the set of auxiliary populations (at least 3) on the left side of the tab. Then compute the results. Ensure a reasonable stability of the outcomes with respect to the cardinal of the set. You can then examine the linear regression plot. A glimpse may already inform you about the quality of the admixture model. Examine the angles, too. A good ancestral admixture reconstruction conveys the Post-JL angle is close to 180 degrees. A decreasing of the angle from Pre-JL to Post-JL points towards a bad admixture model.
+Choose the admixture model and the set of auxiliary populations (at least 3) on the left side of the tab. Then compute the results. Ensure a reasonable stability of the outcomes with respect to the cardinal of the set. You can then examine the linear regression plot of the admixture model, and identify the auxiliary pairs by clicking the corresponding plot points. A glimpse may already inform you about the quality of the admixture model. Examine the angles, too. A good ancestral admixture reconstruction conveys the Post-JL angle is close to 180 degrees. A decreasing of the angle from Pre-JL to Post-JL points towards a bad admixture model.
 
 #### 5. PCA
 
