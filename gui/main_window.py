@@ -122,4 +122,5 @@ class MainWindow(QWidget):
 
     def closeEvent(self, event):
         self.mix_model_widget.plots_panel = None
+        self.input_files_widget.about_dialog.close()
         event.accept()

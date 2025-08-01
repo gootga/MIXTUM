@@ -17,6 +17,7 @@
 from gui.log_system import LogSystem
 from gui.select_file_widget import SelectFileWidget
 from gui.worker import Worker
+from gui.about_dialog import AboutDialog
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool, QSize
 from PySide6.QtWidgets import QWidget, QPushButton, QSizePolicy, QGroupBox, QVBoxLayout, QHBoxLayout
@@ -51,6 +52,7 @@ class InputFilesWidget(QWidget):
         stylesheet_12 = 'color: white; background-color: rgb(128, 64, 0); font-size: 24pt;'
         stylesheet_21 = 'color: white; background-color: rgb(0, 45, 128); font-size: 24pt;'
         stylesheet_22 = 'color: white; background-color: rgb(0, 64, 128); font-size: 24pt;'
+        stylesheet_31 = 'color: white; background-color: rgb(32, 128, 32); font-size: 20pt;'
 
         # Select file widgets
         self.geno_file_widget = SelectFileWidget('Select .geno file', '(*.geno)', stylesheet_11)
@@ -107,10 +109,26 @@ class InputFilesWidget(QWidget):
         opt_layout.addWidget(self.parse_pops_button, 0, Qt.AlignmentFlag.AlignCenter)
         opt_group_box.setLayout(opt_layout)
 
+        # About dialog button
+        self.about_button = QPushButton('About Mixtum')
+        self.about_button.setMinimumSize(QSize(250, 50))
+        self.about_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.about_button.setStyleSheet(stylesheet_31)
+        self.about_button.clicked.connect(self.show_about_dialog)
+
+        self.about_dialog = AboutDialog()
+        self.about_dialog.setModal(False)
+        self.about_dialog.finished.connect(self.enable_about_button)
+
+        # Child layout
+        child_layout = QVBoxLayout()
+        child_layout.addWidget(opt_group_box)
+        child_layout.addWidget(self.about_button)
+
         # Layout
         layout = QHBoxLayout(self)
         layout.addWidget(req_group_box)
-        layout.addWidget(opt_group_box)
+        layout.addLayout(child_layout)
 
     @Slot(str, str)
     def log_file_path(self, key, file_path):
@@ -192,3 +210,12 @@ class InputFilesWidget(QWidget):
         pops_worker.signals.finished.connect(self.parsing_finished)
 
         self.thread_pool.start(pops_worker)
+
+    @Slot()
+    def show_about_dialog(self):
+        self.about_button.setEnabled(False)
+        self.about_dialog.show()
+
+    @Slot()
+    def enable_about_button(self):
+        self.about_button.setEnabled(True)
