@@ -9,7 +9,7 @@ Mixtum is a Python-based code that estimates ancestry contributions in a hybrid 
 * J.-A. Oteo and G. Oteo-García. The geometry of admixture in population genetics: the blessing of dimensionality. Genetics, 228(2):iyae134, 08 2024. ISSN 1943-2631. doi: 10.1093/genetics/iyae134. URL https://doi.org/10.1093/genetics/iyae134
 * G. Oteo-García and J.-A. Oteo. A Geometrical Framework for f-Statistics. Bulletin of Mathematical Biology, 83:14, 2021. ISSN 1522-9602. doi: 10.1007/s11538-020-00850-8. URL https://doi.org/10.1007/s11538-020-00850-8
 
-<img width="1229" height="908" alt="image" src="https://github.com/user-attachments/assets/bb2b5da0-1ba1-43e2-bc39-78ab4f7002f0" />
+<img width="615" height="454" alt="image" src="https://github.com/user-attachments/assets/bb2b5da0-1ba1-43e2-bc39-78ab4f7002f0" />
 
 ## Overview
 
