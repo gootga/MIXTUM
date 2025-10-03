@@ -1,4 +1,5 @@
 # Mixtum: a graphical tool for two-way admixture analysis in population genetics based on $f$-statistics
+<img width="1229" height="908" alt="image" src="https://github.com/user-attachments/assets/bb2b5da0-1ba1-43e2-bc39-78ab4f7002f0" />
 
 ## Abstract
 
